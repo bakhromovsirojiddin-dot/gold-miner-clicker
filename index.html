@@ -72,6 +72,18 @@
                     <!-- Background image loaded via CSS -->
                     <div class="mine-background"></div>
                     
+                    <!-- Vein Health Pool HUD -->
+                    <div class="vein-health-container" id="vein-health-container">
+                        <div class="vein-health-header">
+                            <span id="vein-name">Copper Lode</span>
+                            <span id="vein-tier-text">Tier I</span>
+                        </div>
+                        <div class="health-bar-track">
+                            <div class="health-bar-fill" id="health-bar-fill"></div>
+                            <div class="health-bar-text" id="health-bar-text">300 / 300 HP (100%)</div>
+                        </div>
+                    </div>
+
                     <!-- Canvas for floating/flying gold sparks -->
                     <canvas id="particle-canvas" class="particle-canvas"></canvas>
 
@@ -80,6 +92,7 @@
                         <div class="ore-glow"></div>
                         <div class="ore-node" id="ore-node">
                             <div class="gem-shimmer"></div>
+                            <div class="vein-cracks" id="vein-cracks"></div>
                         </div>
                     </div>
 
@@ -92,21 +105,73 @@
                         <!-- Miners will be dynamically spawned here visually -->
                     </div>
 
+                    <!-- Quest & Raid Combat Log -->
+                    <div class="combat-log-container">
+                        <div class="combat-log" id="combat-log">
+                            <!-- Lines generated dynamically by JS -->
+                        </div>
+                    </div>
+
                     <div class="tap-instruction">
-                        <i class="fa-solid fa-hand-pointer"></i> Tap the Gold Vein to Mine!
+                        <i class="fa-solid fa-hand-pointer"></i> Tap the Core Vein to deal damage!
                     </div>
                 </div>
 
-                <!-- Active Boost Button / Rewarded Ad simulator -->
-                <div class="boost-control-panel">
-                    <button id="boost-btn" class="boost-btn">
-                        <span class="boost-btn-glow"></span>
-                        <span class="boost-btn-content">
-                            <i class="fa-solid fa-video"></i>
-                            <span>Watch Ad: 3x Gold Rush (30s)</span>
-                        </span>
+                <!-- Active Skill Hotbar -->
+                <div class="skills-hotbar">
+                    <!-- Skill 1: Demolish -->
+                    <button class="skill-btn" id="skill-demolish" data-skill="demolish" disabled>
+                        <div class="skill-icon-wrapper">
+                            <i class="fa-solid fa-burst"></i>
+                        </div>
+                        <div class="skill-info">
+                            <div class="skill-header">
+                                <span class="skill-key">Q</span>
+                                <span class="skill-name">Demolish</span>
+                            </div>
+                            <span class="skill-cooldown" id="cd-demolish">LOCKED</span>
+                        </div>
+                        <div class="skill-cooldown-overlay" id="overlay-demolish"></div>
                     </button>
-                    <div id="boost-cooldown-text" class="boost-cooldown-text hidden">Cooldown: 60s</div>
+
+                    <!-- Skill 2: Overclock -->
+                    <button class="skill-btn" id="skill-overclock" data-skill="overclock" disabled>
+                        <div class="skill-icon-wrapper">
+                            <i class="fa-solid fa-gauge-high"></i>
+                        </div>
+                        <div class="skill-info">
+                            <div class="skill-header">
+                                <span class="skill-key">W</span>
+                                <span class="skill-name">Overclock</span>
+                            </div>
+                            <span class="skill-cooldown" id="cd-overclock">LOCKED</span>
+                        </div>
+                        <div class="skill-cooldown-overlay" id="overlay-overclock"></div>
+                    </button>
+
+                    <!-- Skill 3: Focus -->
+                    <button class="skill-btn" id="skill-focus" data-skill="focus" disabled>
+                        <div class="skill-icon-wrapper">
+                            <i class="fa-solid fa-eye"></i>
+                        </div>
+                        <div class="skill-info">
+                            <div class="skill-header">
+                                <span class="skill-key">E</span>
+                                <span class="skill-name">Focus</span>
+                            </div>
+                            <span class="skill-cooldown" id="cd-focus">LOCKED</span>
+                        </div>
+                        <div class="skill-cooldown-overlay" id="overlay-focus"></div>
+                    </button>
+
+                    <!-- Compact Boost control panel -->
+                    <div class="compact-boost-control">
+                        <button id="boost-btn" class="compact-boost-btn">
+                            <i class="fa-solid fa-video"></i>
+                            <span>AD BOOST</span>
+                        </button>
+                        <div id="boost-cooldown-text" class="boost-cooldown-text hidden">CD: 60s</div>
+                    </div>
                 </div>
             </section>
 
@@ -114,33 +179,33 @@
             <section class="dashboard-section">
                 <!-- Navigation Tabs -->
                 <div class="tabs-nav glass-panel">
-                    <button class="tab-btn active" data-tab="shop"><i class="fa-solid fa-store"></i> Shop</button>
-                    <button class="tab-btn" data-tab="achievements"><i class="fa-solid fa-trophy"></i> Journal</button>
-                    <button class="tab-btn" data-tab="expeditions"><i class="fa-solid fa-compass"></i> Missions</button>
-                    <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-dharmachakra"></i> Altar</button>
+                    <button class="tab-btn active" data-tab="mineshaft"><i class="fa-solid fa-dharmachakra"></i> Шахта</button>
+                    <button class="tab-btn" data-tab="classes"><i class="fa-solid fa-users-gear"></i> Герои</button>
+                    <button class="tab-btn" data-tab="expeditions"><i class="fa-solid fa-compass"></i> Рейды</button>
+                    <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-gem"></i> Алтарь</button>
+                    <button class="tab-btn" data-tab="achievements"><i class="fa-solid fa-trophy"></i> Гильдия</button>
                 </div>
 
                 <div class="tab-content-wrapper">
-                    <!-- TAB: SHOP (Stats & Upgrades) -->
-                    <div class="tab-content active" id="tab-shop">
-                        <!-- Stats Summary -->
+                    <!-- TAB 1: MINESHAFT (RPG Dashboard Stats) -->
+                    <div class="tab-content active" id="tab-mineshaft">
                         <div class="stats-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> Mining Dashboard</h2>
+                            <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> RPG Character Stats</h2>
                             <div class="stats-grid">
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Tap Power</span>
+                                    <span class="stat-card-title">Base Tap Power</span>
                                     <span id="tap-power-display" class="stat-card-value">1</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Base Passive Rate</span>
+                                    <span class="stat-card-title">Base DPS Rate</span>
                                     <span id="base-gps-display" class="stat-card-value">0 /s</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Level Multiplier</span>
+                                    <span class="stat-card-title">Prestige Multiplier</span>
                                     <span id="level-mult-display" class="stat-card-value">1.0x</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Miner Rank</span>
+                                    <span class="stat-card-title">Miner Rank Title</span>
                                     <span id="miner-rank-display" class="stat-card-value">Novice Digger</span>
                                 </div>
                                 <div class="stat-card">
@@ -148,80 +213,103 @@
                                     <span id="total-taps-display" class="stat-card-value">0</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Active Miners</span>
+                                    <span class="stat-card-title">Active Workers</span>
                                     <span id="miners-count-display" class="stat-card-value">0</span>
                                 </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Critical Chance</span>
+                                    <span id="crit-chance-display" class="stat-card-value">0%</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Core Fractures</span>
+                                    <span id="fractures-count-display" class="stat-card-value">0</span>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Upgrades Store -->
+                    <!-- TAB 2: HERO CLASSES -->
+                    <div class="tab-content" id="tab-classes">
                         <div class="upgrades-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-store"></i> Upgrades & Equipment</h2>
+                            <h2 class="section-title"><i class="fa-solid fa-users"></i> Recruit Guild Members</h2>
                             <div class="upgrades-list">
-                                <!-- Upgrade Card: Pickaxe -->
-                                <div class="upgrade-card" id="card-pickaxe">
+                                <!-- Upgrade Card: Dwarf Demolisher -->
+                                <div class="upgrade-card" id="card-dwarf">
                                     <div class="upgrade-icon-wrapper pickaxe-icon-bg">
-                                        <i class="fa-solid fa-pickaxe upgrade-icon-fa"></i>
+                                        <i class="fa-solid fa-burst upgrade-icon-fa"></i>
                                     </div>
                                     <div class="upgrade-info">
                                         <div class="upgrade-header">
-                                            <span class="upgrade-name">Forge Pickaxe</span>
-                                            <span class="upgrade-level" id="pickaxe-lvl">Lvl 1</span>
+                                            <span class="upgrade-name">Dwarf Demolisher</span>
+                                            <span class="upgrade-level" id="dwarf-lvl">Lvl 1</span>
                                         </div>
-                                        <p class="upgrade-description">Double your mining tap power.</p>
+                                        <p class="upgrade-description">+2 Base Click Damage per level. Unlocks "Demolish" active skill (Q).</p>
                                         <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="pickaxe-benefit-curr">+1/tap</span>
+                                            <span class="benefit-current" id="dwarf-benefit-curr">+2/tap</span>
                                             <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="pickaxe-benefit-next">+2/tap</span>
+                                            <span class="benefit-next" id="dwarf-benefit-next">+4/tap</span>
                                         </div>
                                     </div>
-                                    <button class="buy-btn" id="buy-pickaxe">
+                                    <button class="buy-btn" id="buy-dwarf">
                                         <i class="fa-solid fa-coins"></i>
-                                        <span id="pickaxe-cost">10</span>
+                                        <span id="dwarf-cost">10</span>
                                     </button>
                                 </div>
 
-                                <!-- Upgrade Card: Hire Miner -->
-                                <div class="upgrade-card" id="card-miner">
+                                <!-- Upgrade Card: Goblin Engineer -->
+                                <div class="upgrade-card" id="card-goblin">
                                     <div class="upgrade-icon-wrapper miner-icon-bg">
-                                        <i class="fa-solid fa-person-digging upgrade-icon-fa"></i>
+                                        <i class="fa-solid fa-gauge-high" style="color: #ff9900;"></i>
                                     </div>
                                     <div class="upgrade-info">
                                         <div class="upgrade-header">
-                                            <span class="upgrade-name">Hire Miner</span>
-                                            <span class="upgrade-level" id="miner-lvl">0 Hired</span>
+                                            <span class="upgrade-name">Goblin Engineer</span>
+                                            <span class="upgrade-level" id="goblin-lvl">0 Hired</span>
                                         </div>
-                                        <p class="upgrade-description">Hire a miner to automate ore collection.</p>
+                                        <p class="upgrade-description">+1 GPS, -1.5% level cost (max 50%). Unlocks "Overclock" (W).</p>
                                         <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="miner-benefit-curr">0/s</span>
+                                            <span class="benefit-current" id="goblin-benefit-curr">0/s</span>
                                             <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="miner-benefit-next">+1/s</span>
+                                            <span class="benefit-next" id="goblin-benefit-next">+1/s</span>
                                         </div>
                                     </div>
-                                    <button class="buy-btn" id="buy-miner">
+                                    <button class="buy-btn" id="buy-goblin">
                                         <i class="fa-solid fa-coins"></i>
-                                        <span id="miner-cost">50</span>
+                                        <span id="goblin-cost">50</span>
+                                    </button>
+                                </div>
+
+                                <!-- Upgrade Card: Crystal Sage -->
+                                <div class="upgrade-card" id="card-sage">
+                                    <div class="upgrade-icon-wrapper might-icon" style="background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3);">
+                                        <i class="fa-solid fa-wand-sparkles" style="color: #00f0ff; font-size: 20px;"></i>
+                                    </div>
+                                    <div class="upgrade-info">
+                                        <div class="upgrade-header">
+                                            <span class="upgrade-name">Crystal Sage</span>
+                                            <span class="upgrade-level" id="sage-lvl">0 Hired</span>
+                                        </div>
+                                        <p class="upgrade-description">+5 GPS, +1% crit chance, +2% expedition speed. Unlocks "Focus" (E).</p>
+                                        <div class="upgrade-benefit">
+                                            <span class="benefit-current" id="sage-benefit-curr">0/s</span>
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                            <span class="benefit-next" id="sage-benefit-next">+5/s</span>
+                                        </div>
+                                    </div>
+                                    <button class="buy-btn" id="buy-sage">
+                                        <i class="fa-solid fa-coins"></i>
+                                        <span id="sage-cost">250</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB: ACHIEVEMENTS -->
-                    <div class="tab-content" id="tab-achievements">
-                        <div class="achievements-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Journal Milestones</h2>
-                            <div class="achievements-list" id="achievements-list">
-                                <!-- Achievements generated by JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB: EXPEDITIONS -->
+                    <!-- TAB 3: EXPEDITIONS (Dungeons) -->
                     <div class="tab-content" id="tab-expeditions">
                         <!-- Expeditions List -->
                         <div class="expeditions-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Miner Expeditions</h2>
+                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Dungeon Raids</h2>
                             <div class="expeditions-list" id="expeditions-list">
                                 <!-- Expeditions generated by JS -->
                             </div>
@@ -229,14 +317,14 @@
 
                         <!-- Artifacts Showcase -->
                         <div class="artifacts-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> Artifacts Showcase</h2>
+                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> Relics & Artifacts</h2>
                             <div class="artifacts-grid" id="artifacts-grid">
                                 <!-- Artifacts status shown here -->
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB: ALTAR (Prestige) -->
+                    <!-- TAB 4: ALTAR (Prestige) -->
                     <div class="tab-content" id="tab-altar">
                         <!-- Prestige Control Panel -->
                         <div class="altar-panel glass-panel">
@@ -251,7 +339,7 @@
                                     </div>
                                 </div>
                                 <p class="prestige-desc">
-                                    Reaching Level 20 unlocks Deep Drilling. It resets your active Gold, Levels, and Hired Miners, but awards **Ancient Diamonds** to purchase permanent divine blessings!
+                                    Reaching Level 20 unlocks Deep Drilling. It resets your active Gold, Levels, and Hero levels, but awards **Ancient Diamonds** to purchase permanent divine blessings!
                                 </p>
                                 <div class="prestige-status-row">
                                     <span>Current Level: <strong id="prestige-current-level">1</strong></span>
@@ -295,7 +383,7 @@
                                             <span class="altar-upgrade-name">Core Overclock</span>
                                             <span class="altar-upgrade-level" id="altar-overclock-lvl">Lvl 0</span>
                                         </div>
-                                        <p class="altar-upgrade-desc">+100% Miner speed per level.</p>
+                                        <p class="altar-upgrade-desc">+100% Hero GPS speed per level.</p>
                                         <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-overclock-cost">4</span> Diamonds</span>
                                     </div>
                                     <button class="altar-buy-btn" id="buy-altar-overclock">UPGRADE</button>
@@ -320,12 +408,22 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- TAB 5: ACHIEVEMENTS -->
+                    <div class="tab-content" id="tab-achievements">
+                        <div class="achievements-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Guild Achievements</h2>
+                            <div class="achievements-list" id="achievements-list">
+                                <!-- Achievements generated by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- System Controls -->
                 <div class="controls-panel glass-panel">
                     <button id="reset-game-btn" class="danger-btn"><i class="fa-solid fa-rotate-left"></i> Reset Progress</button>
-                    <span class="version-tag">v1.1.0 (Prestige)</span>
+                    <span class="version-tag">v1.2.0 (RPG)</span>
                 </div>
             </section>
         </main>
