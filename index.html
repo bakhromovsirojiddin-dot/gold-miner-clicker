@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Gold Miner Clicker - Clicker Game MVP</title>
+    <!-- Google Fonts for premium appearance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for high-quality icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Toast Notification system for micro-interactions -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Top Header HUD -->
+        <header class="hud-header glass-panel">
+            <div class="hud-left">
+                <div class="logo">
+                    <i class="fa-solid fa-helmet-safety logo-icon"></i>
+                    <span class="logo-text">Gold<span class="highlight">Miner</span></span>
+                </div>
+                <div class="level-badge-container">
+                    <span class="level-badge" id="hud-level-badge">Lvl 1</span>
+                    <span class="level-title" id="hud-level-title">Novice Digger</span>
+                </div>
+            </div>
+            
+            <div class="hud-center">
+                <div class="gold-display">
+                    <div class="coin-glow-wrapper">
+                        <i class="fa-solid fa-coins gold-coin-icon"></i>
+                    </div>
+                    <div class="gold-counter-wrapper">
+                        <span id="gold-amount" class="gold-amount">0</span>
+                        <span class="gold-label">GOLD</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <div class="hud-stats-bubble">
+                    <span class="stat-label">Income:</span>
+                    <span id="gps-display" class="stat-value">+0 /s</span>
+                </div>
+                <button id="audio-toggle" class="hud-btn" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high" id="audio-icon"></i>
+                </button>
+            </div>
+
+            <!-- XP Progress Bar -->
+            <div class="xp-bar-container">
+                <div class="xp-bar-fill" id="xp-bar-fill"></div>
+                <span class="xp-text" id="xp-text">XP: 0 / 100</span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="game-workspace">
+            <!-- Left Panel: Interactive Mining Area -->
+            <section class="mine-section glass-panel">
+                <div class="boost-banner" id="boost-banner">
+                    <div class="boost-progress-bar" id="boost-progress"></div>
+                    <span class="boost-text"><i class="fa-solid fa-bolt"></i> GOLDEN RUSH (3x GOLD) - <span id="boost-timer">00s</span></span>
+                </div>
+
+                <div class="mine-viewport" id="mine-viewport">
+                    <!-- Background image loaded via CSS -->
+                    <div class="mine-background"></div>
+                    
+                    <!-- Canvas for floating/flying gold sparks -->
+                    <canvas id="particle-canvas" class="particle-canvas"></canvas>
+
+                    <!-- Clickable Ore Node -->
+                    <div class="ore-node-wrapper" id="ore-node-wrapper">
+                        <div class="ore-glow"></div>
+                        <div class="ore-node" id="ore-node">
+                            <div class="gem-shimmer"></div>
+                        </div>
+                    </div>
+
+                    <!-- Overlay pickaxe that swings to click position -->
+                    <div class="pickaxe-tool" id="pickaxe-tool">
+                        <i class="fa-solid fa-hammer"></i>
+                    </div>
+
+                    <div class="miner-crew-visual" id="miner-crew-visual">
+                        <!-- Miners will be dynamically spawned here visually -->
+                    </div>
+
+                    <div class="tap-instruction">
+                        <i class="fa-solid fa-hand-pointer"></i> Tap the Gold Vein to Mine!
+                    </div>
+                </div>
+
+                <!-- Active Boost Button / Rewarded Ad simulator -->
+                <div class="boost-control-panel">
+                    <button id="boost-btn" class="boost-btn">
+                        <span class="boost-btn-glow"></span>
+                        <span class="boost-btn-content">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Watch Ad: 3x Gold Rush (30s)</span>
+                        </span>
+                    </button>
+                    <div id="boost-cooldown-text" class="boost-cooldown-text hidden">Cooldown: 60s</div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Upgrades and Stats -->
+            <section class="dashboard-section">
+                <!-- Navigation Tabs -->
+                <div class="tabs-nav glass-panel">
+                    <button class="tab-btn active" data-tab="shop"><i class="fa-solid fa-store"></i> Shop</button>
+                    <button class="tab-btn" data-tab="achievements"><i class="fa-solid fa-trophy"></i> Journal</button>
+                    <button class="tab-btn" data-tab="expeditions"><i class="fa-solid fa-compass"></i> Missions</button>
+                    <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-dharmachakra"></i> Altar</button>
+                </div>
+
+                <div class="tab-content-wrapper">
+                    <!-- TAB: SHOP (Stats & Upgrades) -->
+                    <div class="tab-content active" id="tab-shop">
+                        <!-- Stats Summary -->
+                        <div class="stats-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> Mining Dashboard</h2>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Tap Power</span>
+                                    <span id="tap-power-display" class="stat-card-value">1</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Base Passive Rate</span>
+                                    <span id="base-gps-display" class="stat-card-value">0 /s</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Level Multiplier</span>
+                                    <span id="level-mult-display" class="stat-card-value">1.0x</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Miner Rank</span>
+                                    <span id="miner-rank-display" class="stat-card-value">Novice Digger</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Total Taps</span>
+                                    <span id="total-taps-display" class="stat-card-value">0</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Active Miners</span>
+                                    <span id="miners-count-display" class="stat-card-value">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upgrades Store -->
+                        <div class="upgrades-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-store"></i> Upgrades & Equipment</h2>
+                            <div class="upgrades-list">
+                                <!-- Upgrade Card: Pickaxe -->
+                                <div class="upgrade-card" id="card-pickaxe">
+                                    <div class="upgrade-icon-wrapper pickaxe-icon-bg">
+                                        <i class="fa-solid fa-pickaxe upgrade-icon-fa"></i>
+                                    </div>
+                                    <div class="upgrade-info">
+                                        <div class="upgrade-header">
+                                            <span class="upgrade-name">Forge Pickaxe</span>
+                                            <span class="upgrade-level" id="pickaxe-lvl">Lvl 1</span>
+                                        </div>
+                                        <p class="upgrade-description">Double your mining tap power.</p>
+                                        <div class="upgrade-benefit">
+                                            <span class="benefit-current" id="pickaxe-benefit-curr">+1/tap</span>
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                            <span class="benefit-next" id="pickaxe-benefit-next">+2/tap</span>
+                                        </div>
+                                    </div>
+                                    <button class="buy-btn" id="buy-pickaxe">
+                                        <i class="fa-solid fa-coins"></i>
+                                        <span id="pickaxe-cost">10</span>
+                                    </button>
+                                </div>
+
+                                <!-- Upgrade Card: Hire Miner -->
+                                <div class="upgrade-card" id="card-miner">
+                                    <div class="upgrade-icon-wrapper miner-icon-bg">
+                                        <i class="fa-solid fa-person-digging upgrade-icon-fa"></i>
+                                    </div>
+                                    <div class="upgrade-info">
+                                        <div class="upgrade-header">
+                                            <span class="upgrade-name">Hire Miner</span>
+                                            <span class="upgrade-level" id="miner-lvl">0 Hired</span>
+                                        </div>
+                                        <p class="upgrade-description">Hire a miner to automate ore collection.</p>
+                                        <div class="upgrade-benefit">
+                                            <span class="benefit-current" id="miner-benefit-curr">0/s</span>
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                            <span class="benefit-next" id="miner-benefit-next">+1/s</span>
+                                        </div>
+                                    </div>
+                                    <button class="buy-btn" id="buy-miner">
+                                        <i class="fa-solid fa-coins"></i>
+                                        <span id="miner-cost">50</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: ACHIEVEMENTS -->
+                    <div class="tab-content" id="tab-achievements">
+                        <div class="achievements-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Journal Milestones</h2>
+                            <div class="achievements-list" id="achievements-list">
+                                <!-- Achievements generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: EXPEDITIONS -->
+                    <div class="tab-content" id="tab-expeditions">
+                        <!-- Expeditions List -->
+                        <div class="expeditions-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Miner Expeditions</h2>
+                            <div class="expeditions-list" id="expeditions-list">
+                                <!-- Expeditions generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Artifacts Showcase -->
+                        <div class="artifacts-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> Artifacts Showcase</h2>
+                            <div class="artifacts-grid" id="artifacts-grid">
+                                <!-- Artifacts status shown here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: ALTAR (Prestige) -->
+                    <div class="tab-content" id="tab-altar">
+                        <!-- Prestige Control Panel -->
+                        <div class="altar-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-dharmachakra"></i> Deep Drilling Altar</h2>
+                            
+                            <div class="prestige-info-card">
+                                <div class="prestige-currency-display">
+                                    <span class="crystal-glow-wrapper"><i class="fa-solid fa-gem crystal-icon"></i></span>
+                                    <div class="crystal-counter">
+                                        <span id="crystals-amount">0</span>
+                                        <span class="crystal-label">Ancient Diamonds</span>
+                                    </div>
+                                </div>
+                                <p class="prestige-desc">
+                                    Reaching Level 20 unlocks Deep Drilling. It resets your active Gold, Levels, and Hired Miners, but awards **Ancient Diamonds** to purchase permanent divine blessings!
+                                </p>
+                                <div class="prestige-status-row">
+                                    <span>Current Level: <strong id="prestige-current-level">1</strong></span>
+                                    <span>Gained on Reset: <strong id="prestige-claimable-crystals" class="crystal-highlight">+0</strong></span>
+                                </div>
+                                <button id="prestige-trigger-btn" class="prestige-trigger-btn" disabled>
+                                    <i class="fa-solid fa-skull-crossbones"></i>
+                                    <span>Unlock at Level 20</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Prestige Shop Upgrades -->
+                        <div class="altar-shop-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-scroll"></i> Ancient Blessings</h2>
+                            <div class="altar-upgrades-list">
+                                
+                                <!-- Altar Card 1: Might -->
+                                <div class="altar-upgrade-card">
+                                    <div class="altar-upgrade-icon might-icon">
+                                        <i class="fa-solid fa-hand-fist"></i>
+                                    </div>
+                                    <div class="altar-upgrade-info">
+                                        <div class="altar-upgrade-header">
+                                            <span class="altar-upgrade-name">Ancient Might</span>
+                                            <span class="altar-upgrade-level" id="altar-might-lvl">Lvl 0</span>
+                                        </div>
+                                        <p class="altar-upgrade-desc">+50% Global Multiplier per level.</p>
+                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-might-cost">2</span> Diamonds</span>
+                                    </div>
+                                    <button class="altar-buy-btn" id="buy-altar-might">UPGRADE</button>
+                                </div>
+
+                                <!-- Altar Card 2: Overclock -->
+                                <div class="altar-upgrade-card">
+                                    <div class="altar-upgrade-icon overclock-icon">
+                                        <i class="fa-solid fa-gauge-high"></i>
+                                    </div>
+                                    <div class="altar-upgrade-info">
+                                        <div class="altar-upgrade-header">
+                                            <span class="altar-upgrade-name">Core Overclock</span>
+                                            <span class="altar-upgrade-level" id="altar-overclock-lvl">Lvl 0</span>
+                                        </div>
+                                        <p class="altar-upgrade-desc">+100% Miner speed per level.</p>
+                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-overclock-cost">4</span> Diamonds</span>
+                                    </div>
+                                    <button class="altar-buy-btn" id="buy-altar-overclock">UPGRADE</button>
+                                </div>
+
+                                <!-- Altar Card 3: Critical -->
+                                <div class="altar-upgrade-card">
+                                    <div class="altar-upgrade-icon critical-icon">
+                                        <i class="fa-solid fa-burst"></i>
+                                    </div>
+                                    <div class="altar-upgrade-info">
+                                        <div class="altar-upgrade-header">
+                                            <span class="altar-upgrade-name">Critical Strike</span>
+                                            <span class="altar-upgrade-level" id="altar-critical-lvl">Lvl 0</span>
+                                        </div>
+                                        <p class="altar-upgrade-desc">+5% chance of 10x critical taps.</p>
+                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-critical-cost">3</span> Diamonds</span>
+                                    </div>
+                                    <button class="altar-buy-btn" id="buy-altar-critical">UPGRADE</button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Controls -->
+                <div class="controls-panel glass-panel">
+                    <button id="reset-game-btn" class="danger-btn"><i class="fa-solid fa-rotate-left"></i> Reset Progress</button>
+                    <span class="version-tag">v1.1.0 (Prestige)</span>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Level Up Modal overlay -->
+    <div id="level-up-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-panel level-up-content">
+            <div class="modal-glow"></div>
+            <i class="fa-solid fa-circle-up level-up-icon"></i>
+            <h2 class="level-up-title">LEVEL UP!</h2>
+            <div class="level-up-badge" id="modal-level-badge">LEVEL 2</div>
+            <p class="level-up-unlocked" id="modal-level-title">New Title: Pickaxe Master</p>
+            <div class="level-up-rewards">
+                <div class="reward-item">
+                    <i class="fa-solid fa-coins reward-icon-coin"></i>
+                    <span>+<span id="reward-gold-amount">300</span> Gold Burst</span>
+                </div>
+                <div class="reward-item">
+                    <i class="fa-solid fa-circle-nodes reward-icon-mult"></i>
+                    <span>+10% Permanent Multiplier</span>
+                </div>
+            </div>
+            <button id="modal-claim-btn" class="claim-btn">AWESOME!</button>
+        </div>
+    </div>
+    
+    <!-- Prestige Transition whiteout overlay -->
+    <div id="prestige-flash" class="prestige-flash-overlay hidden"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
