@@ -1,726 +1,245 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gold Miner Clicker - 3D Action MMORPG Edition</title>
-    <!-- Google Fonts for premium appearance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome for high-quality icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gold Miner: Realm of the Core</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background: #0b0f19; color: #fff; overflow: hidden; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Экраны (Screens) */
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b0f19; z-index: 10; transition: opacity 0.5s ease; }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
+
+        /* Intro Splash */
+        #intro-screen { background: radial-gradient(circle, #1a1f35 0%, #0b0f19 100%); text-align: center; padding: 20px; }
+        h1 { font-size: 24px; color: #f39c12; text-shadow: 0 0 15px rgba(243,156,18,0.6); margin-bottom: 10px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .input-box { margin: 15px 0; padding: 12px; width: 80%; max-width: 300px; border-radius: 8px; border: 2px solid #f39c12; background: rgba(0,0,0,0.5); color: #fff; font-size: 16px; text-align: center; }
+        .btn { background: linear-gradient(135deg, #f39c12, #d35400); color: #fff; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(243,156,18,0.4); margin-top: 10px; }
+        .btn:active { transform: scale(0.95); }
+
+        /* Creator Room */
+        #creator-screen { flex-direction: row; padding: 10px; justify-content: space-around; }
+        .preview-box { width: 40%; height: 60%; background: #151b2b; border: 2px solid #2c3e50; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .hero-avatar { width: 80px; height: 120px; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        .settings-panel { width: 50%; display: flex; flex-direction: column; gap: 10px; }
+        .setting-group label { font-size: 13px; color: #aaa; display: block; margin-bottom: 4px; }
+        .options-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .opt-btn { background: #1f293d; border: 1px solid #4b5563; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .opt-btn.active { border-color: #f39c12; background: #374151; }
+
+        /* Main Game Interface */
+        #game-screen { justify-content: flex-start; background: #0b0f19; z-index: 5; }
+        .top-bar { width: 100%; padding: 10px; background: #111827; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f293d; }
+        .currency { color: #f39c12; font-weight: bold; font-size: 14px; }
+        
+        /* Arena & Vein */
+        .arena { flex: 1; width: 100%; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #1f293d 0%, #0b0f19 80%); }
+        .core-vein { width: 130px; height: 130px; border-radius: 50%; background: radial-gradient(circle, #cd7f32 0%, #5c3a21 100%); border: 4px solid #8b4513; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; text-align: center; box-shadow: 0 0 30px rgba(205,127,50,0.5); cursor: pointer; transition: transform 0.1s; }
+        .core-vein:active { transform: scale(0.92); }
+        .hp-bar-container { width: 60%; background: #374151; height: 10px; border-radius: 5px; margin-top: 15px; overflow: hidden; border: 1px solid #4b5563; }
+        .hp-bar-fill { width: 100%; height: 100%; background: #e74c3c; transition: width 0.2s; }
+
+        /* Party Container (Squad) */
+        .party-squad { position: absolute; bottom: 120px; width: 100%; display: flex; justify-content: center; gap: 8px; padding: 0 10px; }
+        .party-member { background: rgba(17, 24, 39, 0.85); border: 1px solid #374151; border-radius: 8px; padding: 6px; width: 75px; text-align: center; font-size: 10px; }
+        .party-member .avatar-mini { width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 4px auto; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+        /* Controls HUD */
+        .controls-hud { position: absolute; bottom: 65px; width: 100%; display: flex; justify-content: space-between; padding: 0 15px; align-items: center; }
+        .joystick { width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; }
+        .joystick-knob { width: 30px; height: 30px; border-radius: 50%; background: #f39c12; }
+        .attack-btn { width: 75px; height: 75px; border-radius: 50%; background: linear-gradient(135deg, #e74c3c, #c0392b); border: none; color: #fff; font-weight: bold; font-size: 13px; box-shadow: 0 4px 15px rgba(231,76,60,0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .attack-btn:active { transform: scale(0.9); }
+
+        /* Tabs Navigation */
+        .tabs-bar { width: 100%; height: 50px; background: #111827; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #1f293d; position: absolute; bottom: 0; }
+        .tab-item { font-size: 10px; color: #9ca3af; text-align: center; cursor: pointer; flex: 1; }
+        .tab-item.active { color: #f39c12; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <!-- Toast Notification system for micro-interactions -->
-        <div id="toast-container" class="toast-container"></div>
 
-        <!-- Top Header HUD -->
-        <header class="hud-header glass-panel">
-            <div class="hud-left">
-                <div class="logo">
-                    <i class="fa-solid fa-helmet-safety logo-icon"></i>
-                    <span class="logo-text">Gold<span class="highlight">Miner</span></span>
-                </div>
-                <div class="level-badge-container">
-                    <span class="level-badge" id="hud-level-badge">Lvl 1</span>
-                    <span class="level-title" id="hud-level-title">Novice Digger</span>
-                </div>
-            </div>
-            
-            <div class="hud-center">
-                <div class="gold-display">
-                    <div class="coin-glow-wrapper">
-                        <i class="fa-solid fa-coins gold-coin-icon"></i>
-                    </div>
-                    <div class="gold-counter-wrapper">
-                        <span id="gold-amount" class="gold-amount">0</span>
-                        <span class="gold-label">GOLD</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hud-right">
-                <div class="hud-stats-bubble">
-                    <span class="stat-label">DPS:</span>
-                    <span id="gps-display" class="stat-value">+0 /s</span>
-                </div>
-                <button id="audio-toggle" class="hud-btn" title="Toggle Sound">
-                    <i class="fa-solid fa-volume-high" id="audio-icon"></i>
-                </button>
-            </div>
-
-            <!-- XP Progress Bar -->
-            <div class="xp-bar-container">
-                <div class="xp-bar-fill" id="xp-bar-fill"></div>
-                <span class="xp-text" id="xp-text">XP: 0 / 100</span>
-            </div>
-        </header>
-
-        <!-- Main Workspace -->
-        <main class="game-workspace">
-            <!-- Left Panel: 3D Viewport Area -->
-            <section class="mine-section glass-panel">
-                <div class="boost-banner" id="boost-banner">
-                    <div class="boost-progress-bar" id="boost-progress"></div>
-                    <span class="boost-text"><i class="fa-solid fa-bolt"></i> GOLDEN RUSH (3x DAMAGE) - <span id="boost-timer">00s</span></span>
-                </div>
-
-                <!-- 3D Action Canvas Viewport -->
-                <div class="mine-viewport" id="mine-viewport">
-                    <!-- WebGL Canvas Container -->
-                    <div id="3d-canvas-container" class="canvas-container"></div>
-
-                    <!-- Intro Cinematic Splash Screen -->
-                    <div id="splash-screen" class="splash-screen">
-                        <div class="splash-logo-container">
-                            <i class="fa-solid fa-dharmachakra splash-logo-icon"></i>
-                            <h1 class="splash-title">GOLD MINER</h1>
-                            <span class="splash-subtitle">REALM OF THE CORE</span>
-                        </div>
-                        <button id="splash-start-btn" class="splash-start-btn">
-                            НАЧАТЬ ПРИКЛЮЧЕНИЕ
-                        </button>
-                    </div>
-
-                    <!-- Character Customization Room Screen -->
-                    <div id="customizer-panel" class="customizer-panel hidden">
-                        <h2 class="creator-title">СОЗДАНИЕ ГЕРОЯ</h2>
-                        <div class="creator-form">
-                            <div class="creator-row">
-                                <label class="creator-label">Цвет костюма:</label>
-                                <div class="creator-color-grid">
-                                    <button class="creator-color-btn active" data-color="blue" style="background-color: #007aff;" onclick="setCreatorColor('blue')"></button>
-                                    <button class="creator-color-btn" data-color="red" style="background-color: #ff3b30;" onclick="setCreatorColor('red')"></button>
-                                    <button class="creator-color-btn" data-color="gold" style="background-color: #ffd700;" onclick="setCreatorColor('gold')"></button>
-                                    <button class="creator-color-btn" data-color="purple" style="background-color: #e056fd;" onclick="setCreatorColor('purple')"></button>
-                                </div>
-                            </div>
-                            <div class="creator-row">
-                                <label class="creator-label">Шлем / Убор:</label>
-                                <select id="creator-hat-select" class="creator-select" onchange="setCreatorHat(this.value)">
-                                    <option value="none">Без шлема</option>
-                                    <option value="helmet">Рыцарский шлем</option>
-                                    <option value="crest">Спартанский гребень</option>
-                                    <option value="hood">Капюшон мага</option>
-                                    <option value="crown">Рогатая корона</option>
-                                </select>
-                            </div>
-                            <button id="creator-enter-btn" class="creator-enter-btn">
-                                ВОЙТИ В ДАНЖ
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Vein Health Pool HUD -->
-                    <div class="vein-health-container" id="vein-health-container">
-                        <div class="vein-health-header">
-                            <span id="vein-name">Copper Lode</span>
-                            <span id="vein-tier-text">Tier I</span>
-                        </div>
-                        <div class="health-bar-track">
-                            <div class="health-bar-fill" id="health-bar-fill"></div>
-                            <div class="health-bar-text" id="health-bar-text">300 / 300 HP (100%)</div>
-                        </div>
-                    </div>
-
-                    <!-- Top-Left Party HUD Frames -->
-                    <div class="party-frames" id="party-frames">
-                        <!-- Player Frame -->
-                        <div class="party-member-frame" id="frame-player">
-                            <div class="frame-row">
-                                <span class="member-role-icon"><i class="fa-solid fa-wand-sparkles"></i></span>
-                                <span class="member-name" id="name-player">Player (Mage)</span>
-                            </div>
-                            <div class="member-bar hp-bar">
-                                <div class="bar-fill" id="hp-fill-player" style="width: 100%;"></div>
-                                <span class="bar-num" id="hp-num-player">100/100</span>
-                            </div>
-                            <div class="member-bar mp-bar">
-                                <div class="bar-fill" id="mp-fill-player" style="width: 100%;"></div>
-                                <span class="bar-num" id="mp-num-player">50/50</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Companion 1 Frame (Warrior - Tank) -->
-                        <div class="party-member-frame" id="frame-comp1">
-                            <div class="frame-row">
-                                <span class="member-role-icon"><i class="fa-solid fa-shield-halved"></i></span>
-                                <span class="member-name">Dwarf (Tank)</span>
-                            </div>
-                            <div class="member-bar hp-bar">
-                                <div class="bar-fill" id="hp-fill-comp1" style="width: 100%;"></div>
-                                <span class="bar-num" id="hp-num-comp1">250/250</span>
-                            </div>
-                            <div class="member-bar mp-bar">
-                                <div class="bar-fill" id="mp-fill-comp1" style="width: 100%;"></div>
-                                <span class="bar-num" id="mp-num-comp1">30/30</span>
-                            </div>
-                        </div>
-
-                        <!-- Companion 2 Frame (Priest - Healer) -->
-                        <div class="party-member-frame" id="frame-comp2">
-                            <div class="frame-row">
-                                <span class="member-role-icon"><i class="fa-solid fa-heart-pulse"></i></span>
-                                <span class="member-name">Priest (Healer)</span>
-                            </div>
-                            <div class="member-bar hp-bar">
-                                <div class="bar-fill" id="hp-fill-comp2" style="width: 100%;"></div>
-                                <span class="bar-num" id="hp-num-comp2">120/120</span>
-                            </div>
-                            <div class="member-bar mp-bar">
-                                <div class="bar-fill" id="mp-fill-comp2" style="width: 100%;"></div>
-                                <span class="bar-num" id="mp-num-comp2">100/100</span>
-                            </div>
-                        </div>
-
-                        <!-- Companion 3 Frame (Rogue - DPS) -->
-                        <div class="party-member-frame" id="frame-comp3">
-                            <div class="frame-row">
-                                <span class="member-role-icon"><i class="fa-solid fa-skull"></i></span>
-                                <span class="member-name">Goblin (Rogue)</span>
-                            </div>
-                            <div class="member-bar hp-bar">
-                                <div class="bar-fill" id="hp-fill-comp3" style="width: 100%;"></div>
-                                <span class="bar-num" id="hp-num-comp3">90/90</span>
-                            </div>
-                            <div class="member-bar mp-bar">
-                                <div class="bar-fill" id="mp-fill-comp3" style="width: 100%;"></div>
-                                <span class="bar-num" id="mp-num-comp3">40/40</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Virtual Touch Joystick (Left Side) -->
-                    <div id="joystick-zone" class="joystick-zone">
-                        <div id="joystick-base" class="joystick-base">
-                            <div id="joystick-stick" class="joystick-stick"></div>
-                        </div>
-                    </div>
-
-                    <!-- Perspective Camera Toggle (Top Right) -->
-                    <button id="camera-toggle-btn" class="viewport-overlay-btn" title="Toggle Camera Mode">
-                        <i class="fa-solid fa-camera"></i> <span id="camera-mode-text">TPS</span>
-                    </button>
-
-                    <!-- Action HUD overlays (Attack / Skills) (Bottom Right) -->
-                    <div class="action-hud-overlay">
-                        <!-- Skills hotbar floating buttons -->
-                        <div class="skills-mini-hotbar">
-                            <button class="skill-mini-btn" id="skill-q" data-skill="q" disabled>
-                                <span class="key-badge">Q</span>
-                                <div class="skill-cooldown-overlay" id="overlay-q"></div>
-                                <i class="fa-solid fa-burst"></i>
-                            </button>
-                            <button class="skill-mini-btn" id="skill-w" data-skill="w" disabled>
-                                <span class="key-badge">W</span>
-                                <div class="skill-cooldown-overlay" id="overlay-w"></div>
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </button>
-                            <button class="skill-mini-btn" id="skill-e" data-skill="e" disabled>
-                                <span class="key-badge">E</span>
-                                <div class="skill-cooldown-overlay" id="overlay-e"></div>
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- Attack Button -->
-                        <button id="btn-attack" class="attack-btn">
-                            <i class="fa-solid fa-hammer"></i>
-                            <span class="attack-btn-text">ATTACK</span>
-                        </button>
-                    </div>
-
-                    <!-- Combat & Raid Logs (Bottom Left, above joystick) -->
-                    <div class="combat-log-container">
-                        <div class="combat-log" id="combat-log">
-                            <!-- Logs generated by JS -->
-                        </div>
-                    </div>
-
-                    <div class="tap-instruction">
-                        <i class="fa-solid fa-hand-pointer"></i> Use joystick to move, hit Vein to mine!
-                    </div>
-                </div>
-
-                <!-- Compact Ad Boost bar -->
-                <div class="boost-control-strip">
-                    <button id="boost-btn" class="boost-strip-btn">
-                        <i class="fa-solid fa-video"></i> Watch Ad: Activate 3x Damage Boost (30s)
-                    </button>
-                    <span id="boost-cooldown-text" class="boost-cooldown-text hidden">CD: 60s</span>
-                </div>
-            </section>
-
-            <!-- Right Panel: MMORPG Dashboards -->
-            <section class="dashboard-section">
-                <!-- Navigation Tabs -->
-                <div class="tabs-nav glass-panel">
-                    <button class="tab-btn active" data-tab="mineshaft"><i class="fa-solid fa-dharmachakra"></i> Шахта</button>
-                    <button class="tab-btn" data-tab="customize"><i class="fa-solid fa-shirt"></i> Облик</button>
-                    <button class="tab-btn" data-tab="classes"><i class="fa-solid fa-users-gear"></i> Герои</button>
-                    <button class="tab-btn" data-tab="crafting"><i class="fa-solid fa-hammer"></i> Кузня</button>
-                    <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-gem"></i> Алтарь</button>
-                    <button class="tab-btn" data-tab="guild"><i class="fa-solid fa-shield-halved"></i> Гильдия</button>
-                </div>
-
-                <div class="tab-content-wrapper">
-                    <!-- TAB 1: MINESHAFT (Player Equipment Stats) -->
-                    <div class="tab-content active" id="tab-mineshaft">
-                        <div class="stats-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> RPG Character Stats</h2>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Tap/Attack Damage</span>
-                                    <span id="tap-power-display" class="stat-card-value">1</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Party DPS</span>
-                                    <span id="base-gps-display" class="stat-card-value">0 /s</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Prestige Multiplier</span>
-                                    <span id="level-mult-display" class="stat-card-value">1.0x</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Character Title</span>
-                                    <span id="miner-rank-display" class="stat-card-value">Novice Digger</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Critical Rate</span>
-                                    <span id="crit-chance-display" class="stat-card-value">1%</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Core Fractures</span>
-                                    <span id="fractures-count-display" class="stat-card-value">0</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Character Equipment Panel -->
-                        <div class="equipment-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-shield"></i> Character Equipment</h2>
-                            <div class="equipment-grid">
-                                <!-- Weapon Slot -->
-                                <div class="equipment-slot-card" id="slot-weapon">
-                                    <div class="slot-icon"><i class="fa-solid fa-sword"></i></div>
-                                    <div class="slot-info">
-                                        <span class="slot-label">Weapon</span>
-                                        <span class="slot-item-name" id="eq-weapon-name">Rusty Pickaxe</span>
-                                        <span class="slot-item-stat" id="eq-weapon-stat">+0 Atk Damage</span>
-                                    </div>
-                                </div>
-                                <!-- Helmet Slot -->
-                                <div class="equipment-slot-card" id="slot-helmet">
-                                    <div class="slot-icon"><i class="fa-solid fa-hard-hat"></i></div>
-                                    <div class="slot-info">
-                                        <span class="slot-label">Helmet</span>
-                                        <span class="slot-item-name" id="eq-helmet-name">Leather Hood</span>
-                                        <span class="slot-item-stat" id="eq-helmet-stat">+0 Max HP</span>
-                                    </div>
-                                </div>
-                                <!-- Chest Armor Slot -->
-                                <div class="equipment-slot-card" id="slot-armor">
-                                    <div class="slot-icon"><i class="fa-solid fa-shirt"></i></div>
-                                    <div class="slot-info">
-                                        <span class="slot-label">Armor</span>
-                                        <span class="slot-item-name" id="eq-armor-name">Cloth Tunic</span>
-                                        <span class="slot-item-stat" id="eq-armor-stat">+0 Armor Defense</span>
-                                    </div>
-                                </div>
-                                <!-- Accessory Slot -->
-                                <div class="equipment-slot-card" id="slot-accessory">
-                                    <div class="slot-icon"><i class="fa-solid fa-ring"></i></div>
-                                    <div class="slot-info">
-                                        <span class="slot-label">Accessory</span>
-                                        <span class="slot-item-name" id="eq-accessory-name">Copper Ring</span>
-                                        <span class="slot-item-stat" id="eq-accessory-stat">+0% Critical Rate</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 2: CUSTOMIZE / APPEARANCE -->
-                    <div class="tab-content" id="tab-customize">
-                        <div class="customizer-tab-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-palette"></i> Настройка внешности</h2>
-                            
-                            <!-- Player Customizer -->
-                            <div class="customize-group">
-                                <h3 class="customize-group-title">Облик главного героя</h3>
-                                <div class="customize-option-row">
-                                    <span class="option-label">Цвет костюма:</span>
-                                    <div class="color-options-grid">
-                                        <button class="color-opt-btn active" data-color="blue" style="background-color: #007aff;" onclick="setArmorColor('player', 'blue')"></button>
-                                        <button class="color-opt-btn" data-color="red" style="background-color: #ff3b30;" onclick="setArmorColor('player', 'red')"></button>
-                                        <button class="color-opt-btn" data-color="gold" style="background-color: #ffd700;" onclick="setArmorColor('player', 'gold')"></button>
-                                        <button class="color-opt-btn" data-color="purple" style="background-color: #e056fd;" onclick="setArmorColor('player', 'purple')"></button>
-                                        <button class="color-opt-btn" data-color="green" style="background-color: #32cd32;" onclick="setArmorColor('player', 'green')"></button>
-                                    </div>
-                                </div>
-                                <div class="customize-option-row">
-                                    <span class="option-label">Головной убор:</span>
-                                    <select id="player-hat-select" class="rpg-select" onchange="setPlayerHat(this.value)">
-                                        <option value="none">Без убора</option>
-                                        <option value="helmet">Рыцарский шлем</option>
-                                        <option value="crest">Спартанский шлем</option>
-                                        <option value="hood">Капюшон мага</option>
-                                        <option value="crown">Рогатая корона</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <hr class="rpg-divider">
-
-                            <!-- Companions Customizer -->
-                            <div class="customize-group">
-                                <h3 class="customize-group-title">Цвета отряда соратников</h3>
-                                <div class="customize-option-row">
-                                    <span class="option-label">Дварф (Танк):</span>
-                                    <div class="color-options-grid">
-                                        <button class="color-opt-btn active" data-color="orange" style="background-color: #ff9500;" onclick="setArmorColor('dwarf', 'orange')"></button>
-                                        <button class="color-opt-btn" data-color="red" style="background-color: #ff3b30;" onclick="setArmorColor('dwarf', 'red')"></button>
-                                        <button class="color-opt-btn" data-color="grey" style="background-color: #4a4a4a;" onclick="setArmorColor('dwarf', 'grey')"></button>
-                                    </div>
-                                </div>
-                                <div class="customize-option-row">
-                                    <span class="option-label">Мудрец (Жрец):</span>
-                                    <div class="color-options-grid">
-                                        <button class="color-opt-btn active" data-color="cyan" style="background-color: #00f0ff;" onclick="setArmorColor('sage', 'cyan')"></button>
-                                        <button class="color-opt-btn" data-color="yellow" style="background-color: #ffd700;" onclick="setArmorColor('sage', 'yellow')"></button>
-                                        <button class="color-opt-btn" data-color="white" style="background-color: #ffffff;" onclick="setArmorColor('sage', 'white')"></button>
-                                    </div>
-                                </div>
-                                <div class="customize-option-row">
-                                    <span class="option-label">Гоблин (Рога):</span>
-                                    <div class="color-options-grid">
-                                        <button class="color-opt-btn active" data-color="green" style="background-color: #32cd32;" onclick="setArmorColor('goblin', 'green')"></button>
-                                        <button class="color-opt-btn" data-color="purple" style="background-color: #8b008b;" onclick="setArmorColor('goblin', 'purple')"></button>
-                                        <button class="color-opt-btn" data-color="black" style="background-color: #111111;" onclick="setArmorColor('goblin', 'black')"></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 3: HERO CLASSES -->
-                    <div class="tab-content" id="tab-classes">
-                        <!-- Player Class Selection -->
-                        <div class="class-selection-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-user-tag"></i> Select Active Class</h2>
-                            <div class="classes-selector-grid">
-                                <button class="class-select-btn active" data-class="mage">
-                                    <i class="fa-solid fa-wand-sparkles"></i> Mage
-                                </button>
-                                <button class="class-select-btn" data-class="warrior">
-                                    <i class="fa-solid fa-shield-halved"></i> Warrior
-                                </button>
-                                <button class="class-select-btn" data-class="rogue">
-                                    <i class="fa-solid fa-skull"></i> Rogue
-                                </button>
-                                <button class="class-select-btn" data-class="priest">
-                                    <i class="fa-solid fa-heart-pulse"></i> Priest
-                                </button>
-                                <button class="class-select-btn" data-class="berserker">
-                                    <i class="fa-solid fa-sword"></i> Berserker
-                                </button>
-                                <button class="class-select-btn" data-class="ranger">
-                                    <i class="fa-solid fa-bow-arrow"></i> Ranger
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Active Party Companions upgrades -->
-                        <div class="upgrades-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-users"></i> Recruited Companions</h2>
-                            <div class="upgrades-list">
-                                <!-- Upgrade Card: Dwarf Demolisher (Tank companion) -->
-                                <div class="upgrade-card" id="card-dwarf">
-                                    <div class="upgrade-icon-wrapper pickaxe-icon-bg">
-                                        <i class="fa-solid fa-shield-halved upgrade-icon-fa"></i>
-                                    </div>
-                                    <div class="upgrade-info">
-                                        <div class="upgrade-header">
-                                            <span class="upgrade-name">Dwarf Demolisher (Tank)</span>
-                                            <span class="upgrade-level" id="dwarf-lvl">Lvl 1</span>
-                                        </div>
-                                        <p class="upgrade-description">Pulls enemy aggro, increases Party HP by +50.</p>
-                                        <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="dwarf-benefit-curr">+250 HP</span>
-                                            <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="dwarf-benefit-next">+300 HP</span>
-                                        </div>
-                                    </div>
-                                    <button class="buy-btn" id="buy-dwarf">
-                                        <i class="fa-solid fa-coins"></i>
-                                        <span id="dwarf-cost">10</span>
-                                    </button>
-                                </div>
-
-                                <!-- Upgrade Card: Goblin Engineer (Rogue companion) -->
-                                <div class="upgrade-card" id="card-goblin">
-                                    <div class="upgrade-icon-wrapper miner-icon-bg">
-                                        <i class="fa-solid fa-skull" style="color: #ff9900;"></i>
-                                    </div>
-                                    <div class="upgrade-info">
-                                        <div class="upgrade-header">
-                                            <span class="upgrade-name">Goblin Engineer (Rogue)</span>
-                                            <span class="upgrade-level" id="goblin-lvl">Lvl 0</span>
-                                        </div>
-                                        <p class="upgrade-description">+5 DPS, reduces all hero upgrade costs by 1.5% per level.</p>
-                                        <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="goblin-benefit-curr">0 DPS</span>
-                                            <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="goblin-benefit-next">+5 DPS</span>
-                                        </div>
-                                    </div>
-                                    <button class="buy-btn" id="buy-goblin">
-                                        <i class="fa-solid fa-coins"></i>
-                                        <span id="goblin-cost">50</span>
-                                    </button>
-                                </div>
-
-                                <!-- Upgrade Card: Priest companion -->
-                                <div class="upgrade-card" id="card-sage">
-                                    <div class="upgrade-icon-wrapper might-icon" style="background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3);">
-                                        <i class="fa-solid fa-heart-pulse" style="color: #00f0ff; font-size: 20px;"></i>
-                                    </div>
-                                    <div class="upgrade-info">
-                                        <div class="upgrade-header">
-                                            <span class="upgrade-name">Crystal Priest (Healer)</span>
-                                            <span class="upgrade-level" id="sage-lvl">Lvl 0</span>
-                                        </div>
-                                        <p class="upgrade-description">+3 DPS, heals wounded companions, increases Critical rate by +1%.</p>
-                                        <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="sage-benefit-curr">0 DPS</span>
-                                            <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="sage-benefit-next">+3 DPS</span>
-                                        </div>
-                                    </div>
-                                    <button class="buy-btn" id="buy-sage">
-                                        <i class="fa-solid fa-coins"></i>
-                                        <span id="sage-cost">250</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 4: CRAFTING FORGE -->
-                    <div class="tab-content" id="tab-crafting">
-                        <div class="crafting-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-hammer"></i> Blacksmith Forge</h2>
-                            <div class="crafting-list">
-                                <!-- Craft Weapon -->
-                                <div class="craft-card" id="craft-weapon-btn" onclick="craftItem('weapon')">
-                                    <div class="craft-icon"><i class="fa-solid fa-sword"></i></div>
-                                    <div class="craft-info">
-                                        <span class="craft-item-title">Forge Mithril Sword</span>
-                                        <span class="craft-item-benefit">+25 Click Attack Damage (Visual upgrade!)</span>
-                                        <span class="craft-cost" id="craft-weapon-cost"><i class="fa-solid fa-coins"></i> 500 Gold</span>
-                                    </div>
-                                    <button class="craft-action-btn">FORGE</button>
-                                </div>
-                                <!-- Craft Helmet -->
-                                <div class="craft-card" id="craft-helmet-btn" onclick="craftItem('helmet')">
-                                    <div class="craft-icon"><i class="fa-solid fa-hard-hat"></i></div>
-                                    <div class="craft-info">
-                                        <span class="craft-item-title">Forge steel Helmet</span>
-                                        <span class="craft-item-benefit">+150 Player Maximum HP</span>
-                                        <span class="craft-cost" id="craft-helmet-cost"><i class="fa-solid fa-coins"></i> 300 Gold</span>
-                                    </div>
-                                    <button class="craft-action-btn">FORGE</button>
-                                </div>
-                                <!-- Craft Armor -->
-                                <div class="craft-card" id="craft-armor-btn" onclick="craftItem('armor')">
-                                    <div class="craft-icon"><i class="fa-solid fa-shirt"></i></div>
-                                    <div class="craft-info">
-                                        <span class="craft-item-title">Forge Heavy Plate Armor</span>
-                                        <span class="craft-item-benefit">+20% Armor Defense Reduction</span>
-                                        <span class="craft-cost" id="craft-armor-cost"><i class="fa-solid fa-coins"></i> 400 Gold</span>
-                                    </div>
-                                    <button class="craft-action-btn">FORGE</button>
-                                </div>
-                                <!-- Craft Ring -->
-                                <div class="craft-card" id="craft-ring-btn" onclick="craftItem('ring')">
-                                    <div class="craft-icon"><i class="fa-solid fa-ring"></i></div>
-                                    <div class="craft-info">
-                                        <span class="craft-item-title">Forge Sapphire Signet Ring</span>
-                                        <span class="craft-item-benefit">+8% Critical Strike Chance</span>
-                                        <span class="craft-cost" id="craft-ring-cost"><i class="fa-solid fa-coins"></i> 600 Gold</span>
-                                    </div>
-                                    <button class="craft-action-btn">FORGE</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Expeditions / Dungeon Raids -->
-                        <div class="expeditions-panel glass-panel" style="margin-top: 12px;">
-                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Auto Expeditions</h2>
-                            <div class="expeditions-list" id="expeditions-list">
-                                <!-- Generated by JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 5: ALTAR OF PRESTIGE -->
-                    <div class="tab-content" id="tab-altar">
-                        <div class="altar-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-dharmachakra"></i> Deep Drilling Altar</h2>
-                            
-                            <div class="prestige-info-card">
-                                <div class="prestige-currency-display">
-                                    <span class="crystal-glow-wrapper"><i class="fa-solid fa-gem crystal-icon"></i></span>
-                                    <div class="crystal-counter">
-                                        <span id="crystals-amount">0</span>
-                                        <span class="crystal-label">Ancient Diamonds</span>
-                                    </div>
-                                </div>
-                                <p class="prestige-desc">
-                                    Reaching Level 20 unlocks Deep Drilling. It resets your active Gold, Levels, and Hero levels, but awards **Ancient Diamonds** to purchase permanent divine blessings!
-                                </p>
-                                <div class="prestige-status-row">
-                                    <span>Current Level: <strong id="prestige-current-level">1</strong></span>
-                                    <span>Gained on Reset: <strong id="prestige-claimable-crystals" class="crystal-highlight">+0</strong></span>
-                                </div>
-                                <button id="prestige-trigger-btn" class="prestige-trigger-btn" disabled>
-                                    <i class="fa-solid fa-skull-crossbones"></i>
-                                    <span>Unlock at Level 20</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Prestige Blessings -->
-                        <div class="altar-shop-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-scroll"></i> Ancient Blessings</h2>
-                            <div class="altar-upgrades-list">
-                                <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon might-icon"><i class="fa-solid fa-hand-fist"></i></div>
-                                    <div class="altar-upgrade-info">
-                                        <div class="altar-upgrade-header">
-                                            <span class="altar-upgrade-name">Ancient Might</span>
-                                            <span class="altar-upgrade-level" id="altar-might-lvl">Lvl 0</span>
-                                        </div>
-                                        <p class="altar-upgrade-desc">+50% Global Multiplier per level.</p>
-                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-might-cost">2</span> Diamonds</span>
-                                    </div>
-                                    <button class="altar-buy-btn" id="buy-altar-might">UPGRADE</button>
-                                </div>
-                                <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon overclock-icon"><i class="fa-solid fa-gauge-high"></i></div>
-                                    <div class="altar-upgrade-info">
-                                        <div class="altar-upgrade-header">
-                                            <span class="altar-upgrade-name">Core Overclock</span>
-                                            <span class="altar-upgrade-level" id="altar-overclock-lvl">Lvl 0</span>
-                                        </div>
-                                        <p class="altar-upgrade-desc">+100% Hero GPS speed per level.</p>
-                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-overclock-cost">4</span> Diamonds</span>
-                                    </div>
-                                    <button class="altar-buy-btn" id="buy-altar-overclock">UPGRADE</button>
-                                </div>
-                                <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon critical-icon"><i class="fa-solid fa-burst"></i></div>
-                                    <div class="altar-upgrade-info">
-                                        <div class="altar-upgrade-header">
-                                            <span class="altar-upgrade-name">Critical Strike</span>
-                                            <span class="altar-upgrade-level" id="altar-critical-lvl">Lvl 0</span>
-                                        </div>
-                                        <p class="altar-upgrade-desc">+5% chance of 10x critical taps.</p>
-                                        <span class="altar-upgrade-cost"><i class="fa-solid fa-gem"></i> <span id="altar-critical-cost">3</span> Diamonds</span>
-                                    </div>
-                                    <button class="altar-buy-btn" id="buy-altar-critical">UPGRADE</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 6: GUILD & BANK -->
-                    <div class="tab-content" id="tab-guild">
-                        <!-- Guild Stats -->
-                        <div class="stats-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-shield-halved"></i> Dwarven Outlaws Guild</h2>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Guild Rank Level</span>
-                                    <span id="guild-level-display" class="stat-card-value">Lvl 1</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Guild Members Online</span>
-                                    <span class="stat-card-value">4 / 30</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Dungeon Buff</span>
-                                    <span id="guild-buff-display" class="stat-card-value">+0% Gold</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Bank Deposits</span>
-                                    <span id="guild-bank-display" class="stat-card-value">0G</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Guild Bank panel -->
-                        <div class="guild-bank-panel glass-panel" style="margin-top: 12px;">
-                            <h2 class="section-title"><i class="fa-solid fa-vault"></i> Deposit in Guild Vault</h2>
-                            <p class="prestige-desc" style="font-size: 10px; margin-bottom: 8px;">
-                                Deposit Gold to increase the Guild Bank Rank. Higher Ranks grant permanent passive Gold Multipliers for the entire active party!
-                            </p>
-                            <div class="guild-bank-deposit-row">
-                                <button class="altar-buy-btn" style="width: 100%;" onclick="depositToGuildBank()">
-                                    DEPOSIT 500 GOLD
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Guild Chat simulator -->
-                        <div class="guild-chat-panel glass-panel" style="margin-top: 12px;">
-                            <h2 class="section-title"><i class="fa-solid fa-comments"></i> Guild Chat Feed</h2>
-                            <div class="guild-chat-log" id="guild-chat-log">
-                                <div class="chat-line"><span class="chat-sender">[Guild Master]:</span> Welcome back! Send your healers to ancient raid dungeons.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Controls -->
-                <div class="controls-panel glass-panel">
-                    <button id="reset-game-btn" class="danger-btn"><i class="fa-solid fa-rotate-left"></i> Reset Progress</button>
-                    <span class="version-tag">v2.0.0 (3D Action MMORPG)</span>
-                </div>
-            </section>
-        </main>
+    <!-- 1. INTRO SPLASH SCREEN -->
+    <div id="intro-screen" class="screen">
+        <h1>GOLD MINER<br><span style="font-size: 16px; color: #fff;">REALM OF THE CORE</span></h1>
+        <p style="color: #9ca3af; font-size: 13px; margin-bottom: 20px;">Введите имя вашего героя для начала похода:</p>
+        <input type="text" id="hero-name-input" class="input-box" placeholder="Имя героя..." maxlength="12" value="Hero">
+        <button class="btn" onclick="startCreation()">Создать героя</button>
     </div>
-    
-    <!-- Level Up Modal overlay -->
-    <div id="level-up-modal" class="modal-overlay hidden">
-        <div class="modal-content glass-panel level-up-content">
-            <div class="modal-glow"></div>
-            <i class="fa-solid fa-circle-up level-up-icon"></i>
-            <h2 class="level-up-title">LEVEL UP!</h2>
-            <div class="level-up-badge" id="modal-level-badge">LEVEL 2</div>
-            <p class="level-up-unlocked" id="modal-level-title">New Title: Pickaxe Master</p>
-            <div class="level-up-rewards">
-                <div class="reward-item">
-                    <i class="fa-solid fa-coins reward-icon-coin"></i>
-                    <span>+<span id="reward-gold-amount">300</span> Gold Burst</span>
-                </div>
-                <div class="reward-item">
-                    <i class="fa-solid fa-circle-nodes reward-icon-mult"></i>
-                    <span>+10% Permanent Multiplier</span>
+
+    <!-- 2. CHARACTER CREATOR (Кастомизация) -->
+    <div id="creator-screen" class="screen hidden">
+        <div class="preview-box">
+            <div id="creator-avatar" class="hero-avatar" style="background-color: #3498db;">
+                <span id="preview-helmet-icon">🛡️</span>
+            </div>
+            <p id="preview-name" style="margin-top: 10px; font-weight: bold; font-size: 14px;">Hero</p>
+        </div>
+        <div class="settings-panel">
+            <h3 style="color: #f39c12; font-size: 15px; margin-bottom: 5px;">Настройка облика</h3>
+            
+            <div class="setting-group">
+                <label>Цвет костюма:</label>
+                <div class="options-row">
+                    <button class="opt-btn active" onclick="setSkinColor('#3498db', this)">Синий (Маг)</button>
+                    <button class="opt-btn" onclick="setSkinColor('#e74c3c', this)">Красный</button>
+                    <button class="opt-btn" onclick="setSkinColor('#f1c40f', this)">Золотой</button>
+                    <button class="opt-btn" onclick="setSkinColor('#9b59b6', this)">Фиолетовый</button>
                 </div>
             </div>
-            <button id="modal-claim-btn" class="claim-btn">AWESOME!</button>
+
+            <div class="setting-group">
+                <label>Головной убор:</label>
+                <div class="options-row">
+                    <button class="opt-btn active" onclick="setHelmet('🛡️ Шлем', this)">Шлем</button>
+                    <button class="opt-btn" onclick="setHelmet('🪖 Гребень', this)">Спарта</button>
+                    <button class="opt-btn" onclick="setHelmet('🧙 Капюшон', this)">Маг</button>
+                    <button class="opt-btn" onclick="setHelmet('👑 Корона', this)">Корона</button>
+                </div>
+            </div>
+
+            <button class="btn" style="width: 100%; margin-top: 15px;" onclick="enterDungeon()">Войти в данж</button>
         </div>
     </div>
-    
-    <!-- Prestige Transition whiteout overlay -->
-    <div id="prestige-flash" class="prestige-flash-overlay hidden"></div>
-    
-    <!-- Include local WebGL libraries -->
-    <script src="three.min.js"></script>
-    <script src="app.js"></script>
+
+    <!-- 3. MAIN GAME SCREEN -->
+    <div id="game-screen" class="screen hidden">
+        <div class="top-bar">
+            <div>
+                <span id="ui-hero-name" style="font-weight: bold; color: #f39c12; font-size: 13px;">Hero</span>
+                <div style="font-size: 10px; color: #9ca3af;">Уровень 1 (Медная жила)</div>
+            </div>
+            <div class="currency">🪙 <span id="gold-count">0</span> G</div>
+        </div>
+
+        <div class="arena">
+            <div class="core-vein" onclick="hitCore()">
+                МЕДНАЯ ЖИЛА<br><span id="hp-text" style="font-size: 10px;">300 / 300</span>
+            </div>
+            <div class="hp-bar-container">
+                <div id="hp-bar" class="hp-bar-fill"></div>
+            </div>
+
+            <!-- Отряд компаньонов (Пати) -->
+            <div class="party-squad">
+                <div class="party-member">
+                    <div class="avatar-mini" style="background: #e74c3c;">🛡️</div>
+                    <div>Дварф (Танк)</div>
+                </div>
+                <div class="party-member">
+                    <div class="avatar-mini" style="background: #2ecc71;">✨</div>
+                    <div>Жрица</div>
+                </div>
+                <div class="party-member">
+                    <div class="avatar-mini" style="background: #9b59b6;">🗡️</div>
+                    <div>Рога</div>
+                </div>
+            </div>
+
+            <!-- Контролы джойстика и атаки -->
+            <div class="controls-hud">
+                <div class="joystick">
+                    <div class="joystick-knob"></div>
+                </div>
+                <button class="attack-btn" onclick="hitCore()">АТАКА</button>
+            </div>
+        </div>
+
+        <!-- Нижние вкладки MMORPG -->
+        <div class="tabs-bar">
+            <div class="tab-item active" onclick="switchTab('mine')">⛏️ Шахта</div>
+            <div class="tab-item" onclick="switchTab('customize')">👕 Облик</div>
+            <div class="tab-item" onclick="switchTab('heroes')">👥 Герои</div>
+            <div class="tab-item" onclick="switchTab('forge')">⚒️ Кузня</div>
+            <div class="tab-item" onclick="switchTab('guild')">🛡️ Гильдия</div>
+        </div>
+    </div>
+
+    <script>
+        // Состояние игрока
+        let player = {
+            name: "Hero",
+            color: "#3498db",
+            helmet: "🛡️ Шлем",
+            gold: 0,
+            hp: 300,
+            maxHp: 300
+        };
+
+        // Проверка сохранения (Умный пропуск для старых игроков)
+        window.onload = function() {
+            const saved = localStorage.getItem('gold_miner_player');
+            if (saved) {
+                player = JSON.parse(saved);
+                document.getElementById('intro-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                updateUI();
+            }
+        };
+
+        function startCreation() {
+            const nameInput = document.getElementById('hero-name-input').value.trim();
+            if (nameInput) player.name = nameInput;
+            document.getElementById('preview-name').innerText = player.name;
+            
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('creator-screen').classList.remove('hidden');
+        }
+
+        function setSkinColor(color, btn) {
+            player.color = color;
+            document.getElementById('creator-avatar').style.backgroundColor = color;
+            updateActiveBtn(btn);
+        }
+
+        function setHelmet(helmet, btn) {
+            player.helmet = helmet;
+            document.getElementById('preview-helmet-icon').innerText = helmet.split(" ")[0];
+            updateActiveBtn(btn);
+        }
+
+        function updateActiveBtn(activeBtn) {
+            let row = activeBtn.parentElement;
+            row.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+            activeBtn.classList.add('active');
+        }
+
+        function enterDungeon() {
+            localStorage.setItem('gold_miner_player', JSON.stringify(player));
+            document.getElementById('creator-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            updateUI();
+        }
+
+        function hitCore() {
+            player.gold += 10;
+            player.hp -= 25;
+            if (player.hp <= 0) {
+                player.hp = player.maxHp; // Ресет жилы при расколе
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('gold-count').innerText = player.gold;
+            document.getElementById('ui-hero-name').innerText = player.name;
+            let pct = (player.hp / player.maxHp) * 100;
+            document.getElementById('hp-bar').style.width = pct + '%';
+            document.getElementById('hp-text').innerText = player.hp + ' / ' + player.maxHp;
+        }
+
+        function switchTab(tabName) {
+            if (tabName === 'customize') {
+                // Быстрый вызов кастомизатора прямо из игры
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('creator-screen').classList.remove('hidden');
+            } else {
+                alert("Вкладка '" + tabName + "' открыта!");
+            }
+        }
+    </script>
 </body>
 </html>
