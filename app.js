@@ -176,6 +176,11 @@ let cameraPitch = -0.3; // Angle looking down
 let isDraggingCamera = false;
 let previousTouchX = 0, previousTouchY = 0;
 
+// Intro / Customization State variables
+let inIntro = true;
+let creatorColor = 'blue';
+let creatorHat = 'none';
+
 // Virtual Joystick tracking
 let joystickActive = false;
 let joystickStartX = 0, joystickStartY = 0;
@@ -484,28 +489,9 @@ function init3DScene() {
     // 2. Player character model group
     playerGroup = new THREE.Group();
     playerGroup.position.set(0, 0, 5); // Start slightly away from core
-    
-    // Stylized low-poly body cylinder
-    const bodyGeo = new THREE.CylinderGeometry(0.35, 0.35, 1.3, 6);
-    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x007aff, flatShading: true });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = -0.15;
-    playerGroup.add(body);
-
-    // Helmet box
-    const helmGeo = new THREE.BoxGeometry(0.6, 0.5, 0.6);
-    const helmMat = new THREE.MeshLambertMaterial({ color: 0x5a5f6e, flatShading: true });
-    const helm = new THREE.Mesh(helmGeo, helmMat);
-    helm.position.y = 0.55;
-    playerGroup.add(helm);
-
-    // Weapon mesh container
-    weaponMesh = new THREE.Group();
-    weaponMesh.position.set(0.4, 0.1, 0.4);
-    playerGroup.add(weaponMesh);
-    
-    buildWeaponMesh(); // Bind 3D tool based on equipped weapon rank
     scene.add(playerGroup);
+    
+    buildPlayerMesh(); // Custom built based on user options
 
     // 3. AI Companions Groups
     // Tank (Dwarf)
@@ -525,6 +511,20 @@ function init3DScene() {
 
     // Container for spawned monsters
     scene.add(enemiesContainer);
+
+    // Sync companion armor colors if saved
+    if (state.compColors) {
+        const colorMap = { orange: 0xff9500, grey: 0x4a4a4a, cyan: 0x00f0ff, yellow: 0xffd700, white: 0xffffff, green: 0x32cd32, purple: 0x8b008b, black: 0x111111 };
+        if (state.compColors.dwarf && comp1Group && comp1Group.children && comp1Group.children[0]) {
+            comp1Group.children[0].material.color.setHex(colorMap[state.compColors.dwarf] || 0xff9500);
+        }
+        if (state.compColors.sage && comp2Group && comp2Group.children && comp2Group.children[0]) {
+            comp2Group.children[0].material.color.setHex(colorMap[state.compColors.sage] || 0x00f0ff);
+        }
+        if (state.compColors.goblin && comp3Group && comp3Group.children && comp3Group.children[0]) {
+            comp3Group.children[0].material.color.setHex(colorMap[state.compColors.goblin] || 0x32cd32);
+        }
+    }
 
     // Window resize handler
     window.addEventListener('resize', () => {
@@ -742,11 +742,15 @@ function spawnMonster() {
 
 // --- USER ATTACKS ACTION HUDS ---
 function performAttack() {
+    if (inIntro) return;
+    
     // 1. Weapon swing visual rotation
-    weaponMesh.rotation.z = -1.0;
-    setTimeout(() => {
-        weaponMesh.rotation.z = 0;
-    }, 120);
+    if (weaponMesh) {
+        weaponMesh.rotation.z = -1.0;
+        setTimeout(() => {
+            if (weaponMesh) weaponMesh.rotation.z = 0;
+        }, 120);
+    }
 
     const dmgMultiplier = boost.active ? boost.multiplier : 1;
     const baseAtk = getActiveTapPower() * dmgMultiplier;
@@ -1299,59 +1303,32 @@ function renderLoop(timestamp) {
     
     lastFrameTime = timestamp - (elapsed % fpsInterval);
 
-    if (is2DMode) {
-        render2DLoop();
-        return;
+    // 1. Move Player by virtual joystick vectors (only if not in intro)
+    const playerSpeed = 0.08;
+    if (!inIntro && joystickActive && (joystickVector.x !== 0 || joystickVector.y !== 0)) {
+        let moveAngle = Math.atan2(joystickVector.x, joystickVector.y) + cameraYaw;
+        playerGroup.position.x += Math.sin(moveAngle) * playerSpeed;
+        playerGroup.position.z += Math.cos(moveAngle) * playerSpeed;
+
+        const boundary = 18;
+        playerGroup.position.x = Math.max(-boundary, Math.min(boundary, playerGroup.position.x));
+        playerGroup.position.z = Math.max(-boundary, Math.min(boundary, playerGroup.position.z));
+        playerGroup.rotation.y = moveAngle;
     }
 
-    // Dynamic resize handler in case layout finished after DOMContentLoaded
-    if (renderer && camera && elCanvasContainer) {
-        const width = elCanvasContainer.clientWidth;
-        const height = elCanvasContainer.clientHeight;
-        
-        if (width > 0 && height > 0) {
-            const canvas = renderer.domElement;
-            if (canvas.width !== Math.floor(width * renderer.getPixelRatio()) || 
-                canvas.height !== Math.floor(height * renderer.getPixelRatio())) {
-                camera.aspect = width / height;
-                camera.updateProjectionMatrix();
-                renderer.setSize(width, height);
-            }
-        }
-    }
-
-    // Tick active WebGL animations
+    // 2. Tick active WebGL animations
     if (veinMesh) {
         veinMesh.rotation.y += 0.008;
     }
 
-    // 1. Move Player by virtual joystick vectors
-    const playerSpeed = 0.08;
-    if (joystickActive && (joystickVector.x !== 0 || joystickVector.y !== 0)) {
-        // Character angles relative to camera yaw
-        let moveAngle = Math.atan2(joystickVector.x, joystickVector.y) + cameraYaw;
-        
-        playerGroup.position.x += Math.sin(moveAngle) * playerSpeed;
-        playerGroup.position.z += Math.cos(moveAngle) * playerSpeed;
-
-        // Force inside dungeon boundary
-        const boundary = 18;
-        playerGroup.position.x = Math.max(-boundary, Math.min(boundary, playerGroup.position.x));
-        playerGroup.position.z = Math.max(-boundary, Math.min(boundary, playerGroup.position.z));
-
-        // Rotate character body facing move vector
-        playerGroup.rotation.y = moveAngle;
-    }
-
-    // 2. FSM AI Companions Logic
+    // 3. FSM tick for AI companions
     updateCompanionsAI();
 
-    // 3. Move active enemies toward their aggro targets
+    // 4. Spawns and active updates for dungeon monsters
     updateEnemiesCombat();
 
-    // 4. Projectiles logic
+    // 5. Projectiles and particles logic
     updateProjectiles();
-
     // 5. Update 3D floating particles
     update3DParticles();
 
@@ -2185,9 +2162,19 @@ function loadGame() {
                 document.querySelectorAll('.class-select-btn').forEach(b => b.classList.remove('active'));
                 activeSelect.classList.add('active');
             }
+            
+            // Returning player skips intro
+            inIntro = false;
+            const splash = document.getElementById('splash-screen');
+            if (splash) splash.classList.add('hidden');
+            const creator = document.getElementById('customizer-panel');
+            if (creator) creator.classList.add('hidden');
+        } else {
+            inIntro = true;
         }
     } catch (e) {
         console.error("Failed loading saved state", e);
+        inIntro = true;
     }
 }
 
@@ -2341,6 +2328,55 @@ function setupEventListeners() {
             updateUI();
         });
     });
+
+    // Splash Screen & Creator Event Listeners
+    const splashStartBtn = document.getElementById('splash-start-btn');
+    if (splashStartBtn) {
+        splashStartBtn.addEventListener('click', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) splashScreen.classList.add('hidden');
+            
+            const customizerPanel = document.getElementById('customizer-panel');
+            if (customizerPanel) customizerPanel.classList.remove('hidden');
+            
+            if (playerGroup) {
+                playerGroup.position.set(0, 0, 0); // Display in center pedestal
+            }
+            playCoinSound();
+        });
+    }
+
+    const creatorEnterBtn = document.getElementById('creator-enter-btn');
+    if (creatorEnterBtn) {
+        creatorEnterBtn.addEventListener('click', () => {
+            const customizerPanel = document.getElementById('customizer-panel');
+            if (customizerPanel) customizerPanel.classList.add('hidden');
+            
+            state.playerColor = creatorColor;
+            state.playerHat = creatorHat;
+            inIntro = false;
+            
+            if (playerGroup) {
+                playerGroup.position.set(0, 0, 5); // back to start position
+                playerGroup.rotation.y = 0;
+            }
+            
+            buildPlayerMesh(); // build in 3D
+            
+            // Sync customize tab UI
+            const playerHatSelect = document.getElementById('player-hat-select');
+            if (playerHatSelect) playerHatSelect.value = creatorHat;
+            
+            document.querySelectorAll(`#tab-customize .color-opt-btn[data-color]`).forEach(btn => {
+                if (btn.getAttribute('data-color') === creatorColor) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            
+            saveGame();
+            playCoinSound();
+            writeLog("⚔️ Вы вошли в шахту! Пробурите Рудное Ядро к славе!", "log-system");
+        });
+    }
 
     setupTabs();
 }
@@ -2586,4 +2622,175 @@ function render2DLoop() {
         ctx2D.fillStyle = '#ff3b30';
         ctx2D.fillRect(mX - 9, mY - 12, (mob.hp / mob.maxHp) * 18, 3);
     });
+}
+
+// --- APPEARANCE AND CHARACTER CUSTOMIZER HELPERS ---
+function buildPlayerMesh() {
+    if (!playerGroup) return;
+    
+    // Clear old objects
+    while (playerGroup.children.length > 0) {
+        playerGroup.remove(playerGroup.children[0]);
+    }
+    
+    // If THREE is our mock or 2D mode, skip 3D mesh building
+    if (typeof THREE === 'undefined' || is2DMode) return;
+    
+    const colorName = inIntro ? creatorColor : (state.playerColor || 'blue');
+    const hatName = inIntro ? creatorHat : (state.playerHat || 'none');
+    
+    const colorMap = {
+        blue: 0x007aff,
+        red: 0xff3b30,
+        gold: 0xffd700,
+        purple: 0xe056fd,
+        green: 0x32cd32
+    };
+    const bodyColor = colorMap[colorName] || 0x007aff;
+    
+    // Body mesh
+    const bodyGeo = new THREE.CylinderGeometry(0.35, 0.35, 1.3, 6);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor, flatShading: true });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = -0.15;
+    playerGroup.add(body);
+    
+    // Head / helmet accessory
+    if (hatName !== 'none') {
+        let accessory = null;
+        if (hatName === 'helmet') {
+            const helmGeo = new THREE.BoxGeometry(0.6, 0.5, 0.6);
+            const helmMat = new THREE.MeshLambertMaterial({ color: 0x5a5f6e, flatShading: true });
+            accessory = new THREE.Mesh(helmGeo, helmMat);
+            accessory.position.y = 0.55;
+        } else if (hatName === 'crest') {
+            const helmGroup = new THREE.Group();
+            const baseGeo = new THREE.BoxGeometry(0.55, 0.5, 0.55);
+            const baseMat = new THREE.MeshLambertMaterial({ color: 0xb87333 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.55;
+            helmGroup.add(base);
+            
+            const crestGeo = new THREE.BoxGeometry(0.12, 0.3, 0.6);
+            const crestMat = new THREE.MeshLambertMaterial({ color: 0xff3b30 });
+            const crest = new THREE.Mesh(crestGeo, crestMat);
+            crest.position.set(0, 0.85, 0);
+            helmGroup.add(crest);
+            
+            accessory = helmGroup;
+        } else if (hatName === 'hood') {
+            const hoodGeo = new THREE.ConeGeometry(0.45, 0.7, 5);
+            const hoodMat = new THREE.MeshLambertMaterial({ color: 0x2c1d3f });
+            accessory = new THREE.Mesh(hoodGeo, hoodMat);
+            accessory.position.y = 0.65;
+            accessory.rotation.y = Math.PI / 10;
+        } else if (hatName === 'crown') {
+            const crownGroup = new THREE.Group();
+            const ringGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.15, 6);
+            const ringMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.y = 0.5;
+            crownGroup.add(ring);
+            
+            const lHornGeo = new THREE.ConeGeometry(0.08, 0.35, 4);
+            const hornMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const lHorn = new THREE.Mesh(lHornGeo, hornMat);
+            lHorn.position.set(-0.25, 0.68, 0);
+            lHorn.rotation.z = 0.4;
+            crownGroup.add(lHorn);
+            
+            const rHorn = new THREE.Mesh(lHornGeo, hornMat);
+            rHorn.position.set(0.25, 0.68, 0);
+            rHorn.rotation.z = -0.4;
+            crownGroup.add(rHorn);
+            
+            accessory = crownGroup;
+        }
+        if (accessory) playerGroup.add(accessory);
+    }
+    
+    // Weapon container
+    weaponMesh = new THREE.Group();
+    weaponMesh.position.set(0.4, 0.1, 0.4);
+    playerGroup.add(weaponMesh);
+    
+    buildWeaponMesh();
+}
+
+function setCreatorColor(color) {
+    creatorColor = color;
+    document.querySelectorAll('.creator-color-btn').forEach(btn => {
+        if (btn.getAttribute('data-color') === color) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    buildPlayerMesh();
+    playCoinSound();
+}
+
+function setCreatorHat(hat) {
+    creatorHat = hat;
+    const select = document.getElementById('creator-hat-select');
+    if (select) select.value = hat;
+    buildPlayerMesh();
+    playCoinSound();
+}
+
+function setArmorColor(target, color) {
+    const colorMap = {
+        blue: 0x007aff, red: 0xff3b30, gold: 0xffd700, purple: 0xe056fd, green: 0x32cd32,
+        orange: 0xff9500, grey: 0x4a4a4a, cyan: 0x00f0ff, yellow: 0xffd700, white: 0xffffff, black: 0x111111
+    };
+    const hex = colorMap[color] || 0x007aff;
+    
+    if (target === 'player') {
+        state.playerColor = color;
+        buildPlayerMesh();
+        
+        document.querySelectorAll(`#tab-customize .color-opt-btn[data-color]`).forEach(btn => {
+            if (btn.getAttribute('data-color') === color) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    } else if (target === 'dwarf') {
+        if (!state.compColors) state.compColors = {};
+        state.compColors.dwarf = color;
+        if (comp1Group && comp1Group.children && comp1Group.children[0]) {
+            comp1Group.children[0].material.color.setHex(hex);
+        }
+        document.querySelectorAll(`#tab-customize [onclick*="'dwarf'"]`).forEach(btn => {
+            if (btn.getAttribute('data-color') === color) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    } else if (target === 'sage') {
+        if (!state.compColors) state.compColors = {};
+        state.compColors.sage = color;
+        if (comp2Group && comp2Group.children && comp2Group.children[0]) {
+            comp2Group.children[0].material.color.setHex(hex);
+        }
+        document.querySelectorAll(`#tab-customize [onclick*="'sage'"]`).forEach(btn => {
+            if (btn.getAttribute('data-color') === color) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    } else if (target === 'goblin') {
+        if (!state.compColors) state.compColors = {};
+        state.compColors.goblin = color;
+        if (comp3Group && comp3Group.children && comp3Group.children[0]) {
+            comp3Group.children[0].material.color.setHex(hex);
+        }
+        document.querySelectorAll(`#tab-customize [onclick*="'goblin'"]`).forEach(btn => {
+            if (btn.getAttribute('data-color') === color) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+    
+    saveGame();
+    playCoinSound();
+}
+
+function setPlayerHat(hat) {
+    state.playerHat = hat;
+    const select = document.getElementById('player-hat-select');
+    if (select) select.value = hat;
+    buildPlayerMesh();
+    saveGame();
+    playCoinSound();
 }
