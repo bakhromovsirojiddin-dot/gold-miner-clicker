@@ -1,3 +1,58 @@
+// Mock THREE if not loaded
+if (typeof THREE === 'undefined') {
+    window.THREE = {
+        Group: function() {
+            this.position = { 
+                x: 0, y: 0, z: 5, 
+                distanceTo: function(other) {
+                    const dx = this.x - other.x;
+                    const dz = this.z - other.z;
+                    return Math.sqrt(dx*dx + dz*dz);
+                }, 
+                copy: function(other) {
+                    this.x = other.x; this.y = other.y; this.z = other.z;
+                }, 
+                addScaledVector: function(dir, speed) {
+                    this.x += dir.x * speed; this.z += dir.z * speed;
+                } 
+            };
+            this.rotation = { x: 0, y: 0, z: 0 };
+            this.scale = { set: function() {} };
+            this.add = function() {};
+            this.remove = function() {};
+            this.children = [
+                { visible: true }, { visible: true }, { visible: true }
+            ];
+            this.visible = true;
+        },
+        Vector3: function(x=0, y=0, z=0) {
+            this.x = x; this.y = y; this.z = z;
+            this.subVectors = function(a, b) {
+                this.x = a.x - b.x; this.y = a.y - b.y; this.z = a.z - b.z;
+                return this;
+            };
+            this.length = function() {
+                return Math.sqrt(this.x*this.x + this.z*this.z);
+            };
+            this.normalize = function() {
+                const len = this.length();
+                if (len > 0) {
+                    this.x /= len; this.z /= len;
+                }
+                return this;
+            };
+            this.copy = function(other) {
+                this.x = other.x; this.y = other.y; this.z = other.z;
+                return this;
+            };
+            this.set = function(x, y, z) {
+                this.x = x; this.y = y; this.z = z;
+                return this;
+            };
+        }
+    };
+}
+
 // --- GAME STATE ---
 let state = {
     gold: 0,
@@ -227,10 +282,32 @@ const ACHIEVEMENTS_DATA = [
     { id: 'prestige', name: 'Глубокий бурильщик', desc: 'Сделать сброс на Алтаре', tiers: [1, 3, 10], rewards: [5, 15, 50], rewardType: 'diamonds' }
 ];
 
+let is2DMode = false;
+
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
     loadGame();
-    init3DScene();
+    
+    // Initialize groups globally first so the FSM logic doesn't crash on undefined variables
+    playerGroup = new THREE.Group();
+    playerGroup.position.set(0, 0, 5);
+    
+    comp1Group = new THREE.Group();
+    comp1Group.position.set(-3, 0, 3);
+    
+    comp2Group = new THREE.Group();
+    comp2Group.position.set(0, 0, 4);
+    
+    comp3Group = new THREE.Group();
+    comp3Group.position.set(3, 0, 3);
+    
+    try {
+        init3DScene();
+    } catch (e) {
+        console.error("WebGL 3D Scene initialization failed, falling back to 2D Canvas:", e);
+        init2DFallbackScene();
+    }
+    
     setupEventListeners();
     syncAudioIcon();
     updateUI();
@@ -1221,6 +1298,11 @@ function renderLoop(timestamp) {
     if (elapsed < fpsInterval) return; // Cap at 60 FPS
     
     lastFrameTime = timestamp - (elapsed % fpsInterval);
+
+    if (is2DMode) {
+        render2DLoop();
+        return;
+    }
 
     // Dynamic resize handler in case layout finished after DOMContentLoaded
     if (renderer && camera && elCanvasContainer) {
@@ -2270,4 +2352,153 @@ function resetGame() {
         localStorage.removeItem('gold_miner_clicker_save');
         location.reload(); // Reload page to reset WebGL container objects cleanly
     }
+}
+
+// --- 2D CANVAS FALLBACK SCENE ENGINES ---
+let ctx2D = null;
+
+function init2DFallbackScene() {
+    is2DMode = true;
+    elCanvasContainer = document.getElementById('3d-canvas-container');
+    if (!elCanvasContainer) return;
+    
+    elCanvasContainer.innerHTML = ''; // Clear WebGL remnants
+    const canvas2D = document.createElement('canvas');
+    canvas2D.width = elCanvasContainer.clientWidth || 300;
+    canvas2D.height = elCanvasContainer.clientHeight || 300;
+    canvas2D.style.width = '100%';
+    canvas2D.style.height = '100%';
+    canvas2D.style.position = 'absolute';
+    canvas2D.style.top = '0';
+    canvas2D.style.left = '0';
+    elCanvasContainer.appendChild(canvas2D);
+    ctx2D = canvas2D.getContext('2d');
+    
+    window.addEventListener('resize', () => {
+        if (canvas2D && elCanvasContainer) {
+            canvas2D.width = elCanvasContainer.clientWidth || 300;
+            canvas2D.height = elCanvasContainer.clientHeight || 300;
+        }
+    });
+}
+
+function render2DLoop() {
+    if (!ctx2D) return;
+    const canvas = ctx2D.canvas;
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    // Clear background
+    ctx2D.fillStyle = '#0f0d13';
+    ctx2D.fillRect(0, 0, w, h);
+    
+    // Draw simple grid background
+    ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx2D.lineWidth = 1;
+    const gridSize = 25;
+    for (let x = 0; x < w; x += gridSize) {
+        ctx2D.beginPath(); ctx2D.moveTo(x, 0); ctx2D.lineTo(x, h); ctx2D.stroke();
+    }
+    for (let y = 0; y < h; y += gridSize) {
+        ctx2D.beginPath(); ctx2D.moveTo(0, y); ctx2D.lineTo(w, y); ctx2D.stroke();
+    }
+    
+    const scale = w / 42; // Coordinates mapping scale (-18..18 boundaries)
+    const centerX = w / 2;
+    const centerY = h / 2;
+    
+    // 1. Draw central core vein lode
+    const tierConfig = VEIN_TIERS[Math.min(VEIN_TIERS.length - 1, state.vein.tier - 1)];
+    const veinColorHex = '#' + tierConfig.color.toString(16).padStart(6, '0');
+    
+    ctx2D.save();
+    ctx2D.translate(centerX, centerY);
+    
+    // Core Vein shake if damaged/cracking
+    const hpPct = state.vein.health / state.vein.maxHealth;
+    if (hpPct >= 0.8) {
+        ctx2D.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5);
+    }
+    
+    // Emissive glowing radial gradient
+    const grad = ctx2D.createRadialGradient(0, 0, 8, 0, 0, 42);
+    grad.addColorStop(0, veinColorHex);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx2D.fillStyle = grad;
+    ctx2D.beginPath(); ctx2D.arc(0, 0, 42, 0, Math.PI * 2); ctx2D.fill();
+    
+    // Gemstone center core
+    ctx2D.fillStyle = veinColorHex;
+    ctx2D.beginPath(); ctx2D.arc(0, 0, 26, 0, Math.PI * 2); ctx2D.fill();
+    ctx2D.strokeStyle = '#ffffff';
+    ctx2D.lineWidth = 2;
+    ctx2D.stroke();
+    
+    // Draw crack overlay lines
+    if (hpPct > 0) {
+        ctx2D.strokeStyle = 'rgba(0, 0, 0, ' + Math.min(0.95, hpPct) + ')';
+        ctx2D.lineWidth = 2.5;
+        ctx2D.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4;
+            const length = 10 + hpPct * 16;
+            ctx2D.moveTo(0, 0);
+            ctx2D.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
+        }
+        ctx2D.stroke();
+    }
+    ctx2D.restore();
+    
+    // 2. Draw Player Dot
+    const pX = centerX + playerGroup.position.x * scale;
+    const pY = centerY + playerGroup.position.z * scale;
+    ctx2D.fillStyle = '#007aff';
+    ctx2D.beginPath(); ctx2D.arc(pX, pY, 11, 0, Math.PI * 2); ctx2D.fill();
+    ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1.5; ctx2D.stroke();
+    
+    ctx2D.fillStyle = '#ffffff';
+    ctx2D.font = 'bold 8px Courier New';
+    ctx2D.textAlign = 'center';
+    ctx2D.fillText(`YOU (${state.playerClass.toUpperCase()})`, pX, pY - 14);
+    
+    // 3. Draw Party AI companions
+    if (state.classes.dwarf > 0 && comp1Group) {
+        const c1X = centerX + comp1Group.position.x * scale;
+        const c1Y = centerY + comp1Group.position.z * scale;
+        ctx2D.fillStyle = '#ff9500'; // Tank
+        ctx2D.beginPath(); ctx2D.arc(c1X, c1Y, 9, 0, Math.PI * 2); ctx2D.fill();
+        ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
+        ctx2D.fillStyle = '#ff9500'; ctx2D.font = '7px Courier New'; ctx2D.fillText('TANK', c1X, c1Y - 12);
+    }
+    if (state.classes.sage > 0 && comp2Group) {
+        const c2X = centerX + comp2Group.position.x * scale;
+        const c2Y = centerY + comp2Group.position.z * scale;
+        ctx2D.fillStyle = '#00f0ff'; // Healer
+        ctx2D.beginPath(); ctx2D.arc(c2X, c2Y, 9, 0, Math.PI * 2); ctx2D.fill();
+        ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
+        ctx2D.fillStyle = '#00f0ff'; ctx2D.font = '7px Courier New'; ctx2D.fillText('HEALER', c2X, c2Y - 12);
+    }
+    if (state.classes.goblin > 0 && comp3Group) {
+        const c3X = centerX + comp3Group.position.x * scale;
+        const c3Y = centerY + comp3Group.position.z * scale;
+        ctx2D.fillStyle = '#32cd32'; // Rogue
+        ctx2D.beginPath(); ctx2D.arc(c3X, c3Y, 9, 0, Math.PI * 2); ctx2D.fill();
+        ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
+        ctx2D.fillStyle = '#32cd32'; ctx2D.font = '7px Courier New'; ctx2D.fillText('ROGUE', c3X, c3Y - 12);
+    }
+    
+    // 4. Draw Spawned Dungeon Monsters
+    combatState.enemies.forEach(mob => {
+        const mX = centerX + mob.mesh.position.x * scale;
+        const mY = centerY + mob.mesh.position.z * scale;
+        ctx2D.fillStyle = '#ff3b30'; // Red Monster box
+        ctx2D.fillRect(mX - 7, mY - 7, 14, 14);
+        ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.strokeRect(mX - 7, mY - 7, 14, 14);
+        
+        // Draw health bars above spider
+        ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2D.fillRect(mX - 9, mY - 12, 18, 3);
+        ctx2D.fillStyle = '#ff3b30';
+        ctx2D.fillRect(mX - 9, mY - 12, (mob.hp / mob.maxHp) * 18, 3);
+    });
 }
