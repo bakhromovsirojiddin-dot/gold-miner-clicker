@@ -72,6 +72,47 @@
                 <div class="mine-viewport" id="mine-viewport">
                     <!-- WebGL Canvas Container -->
                     <div id="3d-canvas-container" class="canvas-container"></div>
+
+                    <!-- Intro Cinematic Splash Screen -->
+                    <div id="splash-screen" class="splash-screen">
+                        <div class="splash-logo-container">
+                            <i class="fa-solid fa-dharmachakra splash-logo-icon"></i>
+                            <h1 class="splash-title">GOLD MINER</h1>
+                            <span class="splash-subtitle">REALM OF THE CORE</span>
+                        </div>
+                        <button id="splash-start-btn" class="splash-start-btn">
+                            НАЧАТЬ ПРИКЛЮЧЕНИЕ
+                        </button>
+                    </div>
+
+                    <!-- Character Customization Room Screen -->
+                    <div id="customizer-panel" class="customizer-panel hidden">
+                        <h2 class="creator-title">СОЗДАНИЕ ГЕРОЯ</h2>
+                        <div class="creator-form">
+                            <div class="creator-row">
+                                <label class="creator-label">Цвет костюма:</label>
+                                <div class="creator-color-grid">
+                                    <button class="creator-color-btn active" data-color="blue" style="background-color: #007aff;" onclick="setCreatorColor('blue')"></button>
+                                    <button class="creator-color-btn" data-color="red" style="background-color: #ff3b30;" onclick="setCreatorColor('red')"></button>
+                                    <button class="creator-color-btn" data-color="gold" style="background-color: #ffd700;" onclick="setCreatorColor('gold')"></button>
+                                    <button class="creator-color-btn" data-color="purple" style="background-color: #e056fd;" onclick="setCreatorColor('purple')"></button>
+                                </div>
+                            </div>
+                            <div class="creator-row">
+                                <label class="creator-label">Шлем / Убор:</label>
+                                <select id="creator-hat-select" class="creator-select" onchange="setCreatorHat(this.value)">
+                                    <option value="none">Без шлема</option>
+                                    <option value="helmet">Рыцарский шлем</option>
+                                    <option value="crest">Спартанский гребень</option>
+                                    <option value="hood">Капюшон мага</option>
+                                    <option value="crown">Рогатая корона</option>
+                                </select>
+                            </div>
+                            <button id="creator-enter-btn" class="creator-enter-btn">
+                                ВОЙТИ В ДАНЖ
+                            </button>
+                        </div>
+                    </div>
                     
                     <!-- Vein Health Pool HUD -->
                     <div class="vein-health-container" id="vein-health-container">
@@ -218,6 +259,7 @@
                 <!-- Navigation Tabs -->
                 <div class="tabs-nav glass-panel">
                     <button class="tab-btn active" data-tab="mineshaft"><i class="fa-solid fa-dharmachakra"></i> Шахта</button>
+                    <button class="tab-btn" data-tab="customize"><i class="fa-solid fa-shirt"></i> Облик</button>
                     <button class="tab-btn" data-tab="classes"><i class="fa-solid fa-users-gear"></i> Герои</button>
                     <button class="tab-btn" data-tab="crafting"><i class="fa-solid fa-hammer"></i> Кузня</button>
                     <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-gem"></i> Алтарь</button>
@@ -301,7 +343,70 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: HERO CLASSES -->
+                    <!-- TAB 2: CUSTOMIZE / APPEARANCE -->
+                    <div class="tab-content" id="tab-customize">
+                        <div class="customizer-tab-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-palette"></i> Настройка внешности</h2>
+                            
+                            <!-- Player Customizer -->
+                            <div class="customize-group">
+                                <h3 class="customize-group-title">Облик главного героя</h3>
+                                <div class="customize-option-row">
+                                    <span class="option-label">Цвет костюма:</span>
+                                    <div class="color-options-grid">
+                                        <button class="color-opt-btn active" data-color="blue" style="background-color: #007aff;" onclick="setArmorColor('player', 'blue')"></button>
+                                        <button class="color-opt-btn" data-color="red" style="background-color: #ff3b30;" onclick="setArmorColor('player', 'red')"></button>
+                                        <button class="color-opt-btn" data-color="gold" style="background-color: #ffd700;" onclick="setArmorColor('player', 'gold')"></button>
+                                        <button class="color-opt-btn" data-color="purple" style="background-color: #e056fd;" onclick="setArmorColor('player', 'purple')"></button>
+                                        <button class="color-opt-btn" data-color="green" style="background-color: #32cd32;" onclick="setArmorColor('player', 'green')"></button>
+                                    </div>
+                                </div>
+                                <div class="customize-option-row">
+                                    <span class="option-label">Головной убор:</span>
+                                    <select id="player-hat-select" class="rpg-select" onchange="setPlayerHat(this.value)">
+                                        <option value="none">Без убора</option>
+                                        <option value="helmet">Рыцарский шлем</option>
+                                        <option value="crest">Спартанский шлем</option>
+                                        <option value="hood">Капюшон мага</option>
+                                        <option value="crown">Рогатая корона</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr class="rpg-divider">
+
+                            <!-- Companions Customizer -->
+                            <div class="customize-group">
+                                <h3 class="customize-group-title">Цвета отряда соратников</h3>
+                                <div class="customize-option-row">
+                                    <span class="option-label">Дварф (Танк):</span>
+                                    <div class="color-options-grid">
+                                        <button class="color-opt-btn active" data-color="orange" style="background-color: #ff9500;" onclick="setArmorColor('dwarf', 'orange')"></button>
+                                        <button class="color-opt-btn" data-color="red" style="background-color: #ff3b30;" onclick="setArmorColor('dwarf', 'red')"></button>
+                                        <button class="color-opt-btn" data-color="grey" style="background-color: #4a4a4a;" onclick="setArmorColor('dwarf', 'grey')"></button>
+                                    </div>
+                                </div>
+                                <div class="customize-option-row">
+                                    <span class="option-label">Мудрец (Жрец):</span>
+                                    <div class="color-options-grid">
+                                        <button class="color-opt-btn active" data-color="cyan" style="background-color: #00f0ff;" onclick="setArmorColor('sage', 'cyan')"></button>
+                                        <button class="color-opt-btn" data-color="yellow" style="background-color: #ffd700;" onclick="setArmorColor('sage', 'yellow')"></button>
+                                        <button class="color-opt-btn" data-color="white" style="background-color: #ffffff;" onclick="setArmorColor('sage', 'white')"></button>
+                                    </div>
+                                </div>
+                                <div class="customize-option-row">
+                                    <span class="option-label">Гоблин (Рога):</span>
+                                    <div class="color-options-grid">
+                                        <button class="color-opt-btn active" data-color="green" style="background-color: #32cd32;" onclick="setArmorColor('goblin', 'green')"></button>
+                                        <button class="color-opt-btn" data-color="purple" style="background-color: #8b008b;" onclick="setArmorColor('goblin', 'purple')"></button>
+                                        <button class="color-opt-btn" data-color="black" style="background-color: #111111;" onclick="setArmorColor('goblin', 'black')"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: HERO CLASSES -->
                     <div class="tab-content" id="tab-classes">
                         <!-- Player Class Selection -->
                         <div class="class-selection-panel glass-panel">
@@ -404,7 +509,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 3: CRAFTING FORGE -->
+                    <!-- TAB 4: CRAFTING FORGE -->
                     <div class="tab-content" id="tab-crafting">
                         <div class="crafting-panel glass-panel">
                             <h2 class="section-title"><i class="fa-solid fa-hammer"></i> Blacksmith Forge</h2>
@@ -461,7 +566,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 4: ALTAR OF PRESTIGE -->
+                    <!-- TAB 5: ALTAR OF PRESTIGE -->
                     <div class="tab-content" id="tab-altar">
                         <div class="altar-panel glass-panel">
                             <h2 class="section-title"><i class="fa-solid fa-dharmachakra"></i> Deep Drilling Altar</h2>
@@ -532,7 +637,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB 5: GUILD & BANK -->
+                    <!-- TAB 6: GUILD & BANK -->
                     <div class="tab-content" id="tab-guild">
                         <!-- Guild Stats -->
                         <div class="stats-panel glass-panel">
