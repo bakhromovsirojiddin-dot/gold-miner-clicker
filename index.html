@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gold Miner Clicker - Clicker Game MVP</title>
+    <title>Gold Miner Clicker - 3D Action MMORPG Edition</title>
     <!-- Google Fonts for premium appearance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,7 +44,7 @@
 
             <div class="hud-right">
                 <div class="hud-stats-bubble">
-                    <span class="stat-label">Income:</span>
+                    <span class="stat-label">DPS:</span>
                     <span id="gps-display" class="stat-value">+0 /s</span>
                 </div>
                 <button id="audio-toggle" class="hud-btn" title="Toggle Sound">
@@ -61,16 +61,17 @@
 
         <!-- Main Workspace -->
         <main class="game-workspace">
-            <!-- Left Panel: Interactive Mining Area -->
+            <!-- Left Panel: 3D Viewport Area -->
             <section class="mine-section glass-panel">
                 <div class="boost-banner" id="boost-banner">
                     <div class="boost-progress-bar" id="boost-progress"></div>
-                    <span class="boost-text"><i class="fa-solid fa-bolt"></i> GOLDEN RUSH (3x GOLD) - <span id="boost-timer">00s</span></span>
+                    <span class="boost-text"><i class="fa-solid fa-bolt"></i> GOLDEN RUSH (3x DAMAGE) - <span id="boost-timer">00s</span></span>
                 </div>
 
+                <!-- 3D Action Canvas Viewport -->
                 <div class="mine-viewport" id="mine-viewport">
-                    <!-- Background image loaded via CSS -->
-                    <div class="mine-background"></div>
+                    <!-- WebGL Canvas Container -->
+                    <div id="3d-canvas-container" class="canvas-container"></div>
                     
                     <!-- Vein Health Pool HUD -->
                     <div class="vein-health-container" id="vein-health-container">
@@ -84,120 +85,157 @@
                         </div>
                     </div>
 
-                    <!-- Canvas for floating/flying gold sparks -->
-                    <canvas id="particle-canvas" class="particle-canvas"></canvas>
+                    <!-- Top-Left Party HUD Frames -->
+                    <div class="party-frames" id="party-frames">
+                        <!-- Player Frame -->
+                        <div class="party-member-frame" id="frame-player">
+                            <div class="frame-row">
+                                <span class="member-role-icon"><i class="fa-solid fa-wand-sparkles"></i></span>
+                                <span class="member-name" id="name-player">Player (Mage)</span>
+                            </div>
+                            <div class="member-bar hp-bar">
+                                <div class="bar-fill" id="hp-fill-player" style="width: 100%;"></div>
+                                <span class="bar-num" id="hp-num-player">100/100</span>
+                            </div>
+                            <div class="member-bar mp-bar">
+                                <div class="bar-fill" id="mp-fill-player" style="width: 100%;"></div>
+                                <span class="bar-num" id="mp-num-player">50/50</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Companion 1 Frame (Warrior - Tank) -->
+                        <div class="party-member-frame" id="frame-comp1">
+                            <div class="frame-row">
+                                <span class="member-role-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                                <span class="member-name">Dwarf (Tank)</span>
+                            </div>
+                            <div class="member-bar hp-bar">
+                                <div class="bar-fill" id="hp-fill-comp1" style="width: 100%;"></div>
+                                <span class="bar-num" id="hp-num-comp1">250/250</span>
+                            </div>
+                            <div class="member-bar mp-bar">
+                                <div class="bar-fill" id="mp-fill-comp1" style="width: 100%;"></div>
+                                <span class="bar-num" id="mp-num-comp1">30/30</span>
+                            </div>
+                        </div>
 
-                    <!-- Clickable Ore Node -->
-                    <div class="ore-node-wrapper" id="ore-node-wrapper">
-                        <div class="ore-glow"></div>
-                        <div class="ore-node" id="ore-node">
-                            <div class="gem-shimmer"></div>
-                            <div class="vein-cracks" id="vein-cracks"></div>
+                        <!-- Companion 2 Frame (Priest - Healer) -->
+                        <div class="party-member-frame" id="frame-comp2">
+                            <div class="frame-row">
+                                <span class="member-role-icon"><i class="fa-solid fa-heart-pulse"></i></span>
+                                <span class="member-name">Priest (Healer)</span>
+                            </div>
+                            <div class="member-bar hp-bar">
+                                <div class="bar-fill" id="hp-fill-comp2" style="width: 100%;"></div>
+                                <span class="bar-num" id="hp-num-comp2">120/120</span>
+                            </div>
+                            <div class="member-bar mp-bar">
+                                <div class="bar-fill" id="mp-fill-comp2" style="width: 100%;"></div>
+                                <span class="bar-num" id="mp-num-comp2">100/100</span>
+                            </div>
+                        </div>
+
+                        <!-- Companion 3 Frame (Rogue - DPS) -->
+                        <div class="party-member-frame" id="frame-comp3">
+                            <div class="frame-row">
+                                <span class="member-role-icon"><i class="fa-solid fa-skull"></i></span>
+                                <span class="member-name">Goblin (Rogue)</span>
+                            </div>
+                            <div class="member-bar hp-bar">
+                                <div class="bar-fill" id="hp-fill-comp3" style="width: 100%;"></div>
+                                <span class="bar-num" id="hp-num-comp3">90/90</span>
+                            </div>
+                            <div class="member-bar mp-bar">
+                                <div class="bar-fill" id="mp-fill-comp3" style="width: 100%;"></div>
+                                <span class="bar-num" id="mp-num-comp3">40/40</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Overlay pickaxe that swings to click position -->
-                    <div class="pickaxe-tool" id="pickaxe-tool">
-                        <i class="fa-solid fa-hammer"></i>
+                    <!-- Virtual Touch Joystick (Left Side) -->
+                    <div id="joystick-zone" class="joystick-zone">
+                        <div id="joystick-base" class="joystick-base">
+                            <div id="joystick-stick" class="joystick-stick"></div>
+                        </div>
                     </div>
 
-                    <div class="miner-crew-visual" id="miner-crew-visual">
-                        <!-- Miners will be dynamically spawned here visually -->
+                    <!-- Perspective Camera Toggle (Top Right) -->
+                    <button id="camera-toggle-btn" class="viewport-overlay-btn" title="Toggle Camera Mode">
+                        <i class="fa-solid fa-camera"></i> <span id="camera-mode-text">TPS</span>
+                    </button>
+
+                    <!-- Action HUD overlays (Attack / Skills) (Bottom Right) -->
+                    <div class="action-hud-overlay">
+                        <!-- Skills hotbar floating buttons -->
+                        <div class="skills-mini-hotbar">
+                            <button class="skill-mini-btn" id="skill-q" data-skill="q" disabled>
+                                <span class="key-badge">Q</span>
+                                <div class="skill-cooldown-overlay" id="overlay-q"></div>
+                                <i class="fa-solid fa-burst"></i>
+                            </button>
+                            <button class="skill-mini-btn" id="skill-w" data-skill="w" disabled>
+                                <span class="key-badge">W</span>
+                                <div class="skill-cooldown-overlay" id="overlay-w"></div>
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </button>
+                            <button class="skill-mini-btn" id="skill-e" data-skill="e" disabled>
+                                <span class="key-badge">E</span>
+                                <div class="skill-cooldown-overlay" id="overlay-e"></div>
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Attack Button -->
+                        <button id="btn-attack" class="attack-btn">
+                            <i class="fa-solid fa-hammer"></i>
+                            <span class="attack-btn-text">ATTACK</span>
+                        </button>
                     </div>
 
-                    <!-- Quest & Raid Combat Log -->
+                    <!-- Combat & Raid Logs (Bottom Left, above joystick) -->
                     <div class="combat-log-container">
                         <div class="combat-log" id="combat-log">
-                            <!-- Lines generated dynamically by JS -->
+                            <!-- Logs generated by JS -->
                         </div>
                     </div>
 
                     <div class="tap-instruction">
-                        <i class="fa-solid fa-hand-pointer"></i> Tap the Core Vein to deal damage!
+                        <i class="fa-solid fa-hand-pointer"></i> Use joystick to move, hit Vein to mine!
                     </div>
                 </div>
 
-                <!-- Active Skill Hotbar -->
-                <div class="skills-hotbar">
-                    <!-- Skill 1: Demolish -->
-                    <button class="skill-btn" id="skill-demolish" data-skill="demolish" disabled>
-                        <div class="skill-icon-wrapper">
-                            <i class="fa-solid fa-burst"></i>
-                        </div>
-                        <div class="skill-info">
-                            <div class="skill-header">
-                                <span class="skill-key">Q</span>
-                                <span class="skill-name">Demolish</span>
-                            </div>
-                            <span class="skill-cooldown" id="cd-demolish">LOCKED</span>
-                        </div>
-                        <div class="skill-cooldown-overlay" id="overlay-demolish"></div>
+                <!-- Compact Ad Boost bar -->
+                <div class="boost-control-strip">
+                    <button id="boost-btn" class="boost-strip-btn">
+                        <i class="fa-solid fa-video"></i> Watch Ad: Activate 3x Damage Boost (30s)
                     </button>
-
-                    <!-- Skill 2: Overclock -->
-                    <button class="skill-btn" id="skill-overclock" data-skill="overclock" disabled>
-                        <div class="skill-icon-wrapper">
-                            <i class="fa-solid fa-gauge-high"></i>
-                        </div>
-                        <div class="skill-info">
-                            <div class="skill-header">
-                                <span class="skill-key">W</span>
-                                <span class="skill-name">Overclock</span>
-                            </div>
-                            <span class="skill-cooldown" id="cd-overclock">LOCKED</span>
-                        </div>
-                        <div class="skill-cooldown-overlay" id="overlay-overclock"></div>
-                    </button>
-
-                    <!-- Skill 3: Focus -->
-                    <button class="skill-btn" id="skill-focus" data-skill="focus" disabled>
-                        <div class="skill-icon-wrapper">
-                            <i class="fa-solid fa-eye"></i>
-                        </div>
-                        <div class="skill-info">
-                            <div class="skill-header">
-                                <span class="skill-key">E</span>
-                                <span class="skill-name">Focus</span>
-                            </div>
-                            <span class="skill-cooldown" id="cd-focus">LOCKED</span>
-                        </div>
-                        <div class="skill-cooldown-overlay" id="overlay-focus"></div>
-                    </button>
-
-                    <!-- Compact Boost control panel -->
-                    <div class="compact-boost-control">
-                        <button id="boost-btn" class="compact-boost-btn">
-                            <i class="fa-solid fa-video"></i>
-                            <span>AD BOOST</span>
-                        </button>
-                        <div id="boost-cooldown-text" class="boost-cooldown-text hidden">CD: 60s</div>
-                    </div>
+                    <span id="boost-cooldown-text" class="boost-cooldown-text hidden">CD: 60s</span>
                 </div>
             </section>
 
-            <!-- Right Panel: Upgrades and Stats -->
+            <!-- Right Panel: MMORPG Dashboards -->
             <section class="dashboard-section">
                 <!-- Navigation Tabs -->
                 <div class="tabs-nav glass-panel">
                     <button class="tab-btn active" data-tab="mineshaft"><i class="fa-solid fa-dharmachakra"></i> Шахта</button>
                     <button class="tab-btn" data-tab="classes"><i class="fa-solid fa-users-gear"></i> Герои</button>
-                    <button class="tab-btn" data-tab="expeditions"><i class="fa-solid fa-compass"></i> Рейды</button>
+                    <button class="tab-btn" data-tab="crafting"><i class="fa-solid fa-hammer"></i> Кузня</button>
                     <button class="tab-btn" data-tab="altar"><i class="fa-solid fa-gem"></i> Алтарь</button>
-                    <button class="tab-btn" data-tab="achievements"><i class="fa-solid fa-trophy"></i> Гильдия</button>
+                    <button class="tab-btn" data-tab="guild"><i class="fa-solid fa-shield-halved"></i> Гильдия</button>
                 </div>
 
                 <div class="tab-content-wrapper">
-                    <!-- TAB 1: MINESHAFT (RPG Dashboard Stats) -->
+                    <!-- TAB 1: MINESHAFT (Player Equipment Stats) -->
                     <div class="tab-content active" id="tab-mineshaft">
                         <div class="stats-panel glass-panel">
                             <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i> RPG Character Stats</h2>
                             <div class="stats-grid">
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Base Tap Power</span>
+                                    <span class="stat-card-title">Tap/Attack Damage</span>
                                     <span id="tap-power-display" class="stat-card-value">1</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Base DPS Rate</span>
+                                    <span class="stat-card-title">Party DPS</span>
                                     <span id="base-gps-display" class="stat-card-value">0 /s</span>
                                 </div>
                                 <div class="stat-card">
@@ -205,20 +243,12 @@
                                     <span id="level-mult-display" class="stat-card-value">1.0x</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Miner Rank Title</span>
+                                    <span class="stat-card-title">Character Title</span>
                                     <span id="miner-rank-display" class="stat-card-value">Novice Digger</span>
                                 </div>
                                 <div class="stat-card">
-                                    <span class="stat-card-title">Total Taps</span>
-                                    <span id="total-taps-display" class="stat-card-value">0</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Active Workers</span>
-                                    <span id="miners-count-display" class="stat-card-value">0</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-card-title">Critical Chance</span>
-                                    <span id="crit-chance-display" class="stat-card-value">0%</span>
+                                    <span class="stat-card-title">Critical Rate</span>
+                                    <span id="crit-chance-display" class="stat-card-value">1%</span>
                                 </div>
                                 <div class="stat-card">
                                     <span class="stat-card-title">Core Fractures</span>
@@ -226,28 +256,97 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Character Equipment Panel -->
+                        <div class="equipment-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-shield"></i> Character Equipment</h2>
+                            <div class="equipment-grid">
+                                <!-- Weapon Slot -->
+                                <div class="equipment-slot-card" id="slot-weapon">
+                                    <div class="slot-icon"><i class="fa-solid fa-sword"></i></div>
+                                    <div class="slot-info">
+                                        <span class="slot-label">Weapon</span>
+                                        <span class="slot-item-name" id="eq-weapon-name">Rusty Pickaxe</span>
+                                        <span class="slot-item-stat" id="eq-weapon-stat">+0 Atk Damage</span>
+                                    </div>
+                                </div>
+                                <!-- Helmet Slot -->
+                                <div class="equipment-slot-card" id="slot-helmet">
+                                    <div class="slot-icon"><i class="fa-solid fa-hard-hat"></i></div>
+                                    <div class="slot-info">
+                                        <span class="slot-label">Helmet</span>
+                                        <span class="slot-item-name" id="eq-helmet-name">Leather Hood</span>
+                                        <span class="slot-item-stat" id="eq-helmet-stat">+0 Max HP</span>
+                                    </div>
+                                </div>
+                                <!-- Chest Armor Slot -->
+                                <div class="equipment-slot-card" id="slot-armor">
+                                    <div class="slot-icon"><i class="fa-solid fa-shirt"></i></div>
+                                    <div class="slot-info">
+                                        <span class="slot-label">Armor</span>
+                                        <span class="slot-item-name" id="eq-armor-name">Cloth Tunic</span>
+                                        <span class="slot-item-stat" id="eq-armor-stat">+0 Armor Defense</span>
+                                    </div>
+                                </div>
+                                <!-- Accessory Slot -->
+                                <div class="equipment-slot-card" id="slot-accessory">
+                                    <div class="slot-icon"><i class="fa-solid fa-ring"></i></div>
+                                    <div class="slot-info">
+                                        <span class="slot-label">Accessory</span>
+                                        <span class="slot-item-name" id="eq-accessory-name">Copper Ring</span>
+                                        <span class="slot-item-stat" id="eq-accessory-stat">+0% Critical Rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- TAB 2: HERO CLASSES -->
                     <div class="tab-content" id="tab-classes">
+                        <!-- Player Class Selection -->
+                        <div class="class-selection-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-user-tag"></i> Select Active Class</h2>
+                            <div class="classes-selector-grid">
+                                <button class="class-select-btn active" data-class="mage">
+                                    <i class="fa-solid fa-wand-sparkles"></i> Mage
+                                </button>
+                                <button class="class-select-btn" data-class="warrior">
+                                    <i class="fa-solid fa-shield-halved"></i> Warrior
+                                </button>
+                                <button class="class-select-btn" data-class="rogue">
+                                    <i class="fa-solid fa-skull"></i> Rogue
+                                </button>
+                                <button class="class-select-btn" data-class="priest">
+                                    <i class="fa-solid fa-heart-pulse"></i> Priest
+                                </button>
+                                <button class="class-select-btn" data-class="berserker">
+                                    <i class="fa-solid fa-sword"></i> Berserker
+                                </button>
+                                <button class="class-select-btn" data-class="ranger">
+                                    <i class="fa-solid fa-bow-arrow"></i> Ranger
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Active Party Companions upgrades -->
                         <div class="upgrades-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-users"></i> Recruit Guild Members</h2>
+                            <h2 class="section-title"><i class="fa-solid fa-users"></i> Recruited Companions</h2>
                             <div class="upgrades-list">
-                                <!-- Upgrade Card: Dwarf Demolisher -->
+                                <!-- Upgrade Card: Dwarf Demolisher (Tank companion) -->
                                 <div class="upgrade-card" id="card-dwarf">
                                     <div class="upgrade-icon-wrapper pickaxe-icon-bg">
-                                        <i class="fa-solid fa-burst upgrade-icon-fa"></i>
+                                        <i class="fa-solid fa-shield-halved upgrade-icon-fa"></i>
                                     </div>
                                     <div class="upgrade-info">
                                         <div class="upgrade-header">
-                                            <span class="upgrade-name">Dwarf Demolisher</span>
+                                            <span class="upgrade-name">Dwarf Demolisher (Tank)</span>
                                             <span class="upgrade-level" id="dwarf-lvl">Lvl 1</span>
                                         </div>
-                                        <p class="upgrade-description">+2 Base Click Damage per level. Unlocks "Demolish" active skill (Q).</p>
+                                        <p class="upgrade-description">Pulls enemy aggro, increases Party HP by +50.</p>
                                         <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="dwarf-benefit-curr">+2/tap</span>
+                                            <span class="benefit-current" id="dwarf-benefit-curr">+250 HP</span>
                                             <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="dwarf-benefit-next">+4/tap</span>
+                                            <span class="benefit-next" id="dwarf-benefit-next">+300 HP</span>
                                         </div>
                                     </div>
                                     <button class="buy-btn" id="buy-dwarf">
@@ -256,21 +355,21 @@
                                     </button>
                                 </div>
 
-                                <!-- Upgrade Card: Goblin Engineer -->
+                                <!-- Upgrade Card: Goblin Engineer (Rogue companion) -->
                                 <div class="upgrade-card" id="card-goblin">
                                     <div class="upgrade-icon-wrapper miner-icon-bg">
-                                        <i class="fa-solid fa-gauge-high" style="color: #ff9900;"></i>
+                                        <i class="fa-solid fa-skull" style="color: #ff9900;"></i>
                                     </div>
                                     <div class="upgrade-info">
                                         <div class="upgrade-header">
-                                            <span class="upgrade-name">Goblin Engineer</span>
-                                            <span class="upgrade-level" id="goblin-lvl">0 Hired</span>
+                                            <span class="upgrade-name">Goblin Engineer (Rogue)</span>
+                                            <span class="upgrade-level" id="goblin-lvl">Lvl 0</span>
                                         </div>
-                                        <p class="upgrade-description">+1 GPS, -1.5% level cost (max 50%). Unlocks "Overclock" (W).</p>
+                                        <p class="upgrade-description">+5 DPS, reduces all hero upgrade costs by 1.5% per level.</p>
                                         <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="goblin-benefit-curr">0/s</span>
+                                            <span class="benefit-current" id="goblin-benefit-curr">0 DPS</span>
                                             <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="goblin-benefit-next">+1/s</span>
+                                            <span class="benefit-next" id="goblin-benefit-next">+5 DPS</span>
                                         </div>
                                     </div>
                                     <button class="buy-btn" id="buy-goblin">
@@ -279,21 +378,21 @@
                                     </button>
                                 </div>
 
-                                <!-- Upgrade Card: Crystal Sage -->
+                                <!-- Upgrade Card: Priest companion -->
                                 <div class="upgrade-card" id="card-sage">
                                     <div class="upgrade-icon-wrapper might-icon" style="background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3);">
-                                        <i class="fa-solid fa-wand-sparkles" style="color: #00f0ff; font-size: 20px;"></i>
+                                        <i class="fa-solid fa-heart-pulse" style="color: #00f0ff; font-size: 20px;"></i>
                                     </div>
                                     <div class="upgrade-info">
                                         <div class="upgrade-header">
-                                            <span class="upgrade-name">Crystal Sage</span>
-                                            <span class="upgrade-level" id="sage-lvl">0 Hired</span>
+                                            <span class="upgrade-name">Crystal Priest (Healer)</span>
+                                            <span class="upgrade-level" id="sage-lvl">Lvl 0</span>
                                         </div>
-                                        <p class="upgrade-description">+5 GPS, +1% crit chance, +2% expedition speed. Unlocks "Focus" (E).</p>
+                                        <p class="upgrade-description">+3 DPS, heals wounded companions, increases Critical rate by +1%.</p>
                                         <div class="upgrade-benefit">
-                                            <span class="benefit-current" id="sage-benefit-curr">0/s</span>
+                                            <span class="benefit-current" id="sage-benefit-curr">0 DPS</span>
                                             <i class="fa-solid fa-arrow-right"></i>
-                                            <span class="benefit-next" id="sage-benefit-next">+5/s</span>
+                                            <span class="benefit-next" id="sage-benefit-next">+3 DPS</span>
                                         </div>
                                     </div>
                                     <button class="buy-btn" id="buy-sage">
@@ -305,28 +404,65 @@
                         </div>
                     </div>
 
-                    <!-- TAB 3: EXPEDITIONS (Dungeons) -->
-                    <div class="tab-content" id="tab-expeditions">
-                        <!-- Expeditions List -->
-                        <div class="expeditions-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Dungeon Raids</h2>
-                            <div class="expeditions-list" id="expeditions-list">
-                                <!-- Expeditions generated by JS -->
+                    <!-- TAB 3: CRAFTING FORGE -->
+                    <div class="tab-content" id="tab-crafting">
+                        <div class="crafting-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-hammer"></i> Blacksmith Forge</h2>
+                            <div class="crafting-list">
+                                <!-- Craft Weapon -->
+                                <div class="craft-card" id="craft-weapon-btn" onclick="craftItem('weapon')">
+                                    <div class="craft-icon"><i class="fa-solid fa-sword"></i></div>
+                                    <div class="craft-info">
+                                        <span class="craft-item-title">Forge Mithril Sword</span>
+                                        <span class="craft-item-benefit">+25 Click Attack Damage (Visual upgrade!)</span>
+                                        <span class="craft-cost" id="craft-weapon-cost"><i class="fa-solid fa-coins"></i> 500 Gold</span>
+                                    </div>
+                                    <button class="craft-action-btn">FORGE</button>
+                                </div>
+                                <!-- Craft Helmet -->
+                                <div class="craft-card" id="craft-helmet-btn" onclick="craftItem('helmet')">
+                                    <div class="craft-icon"><i class="fa-solid fa-hard-hat"></i></div>
+                                    <div class="craft-info">
+                                        <span class="craft-item-title">Forge steel Helmet</span>
+                                        <span class="craft-item-benefit">+150 Player Maximum HP</span>
+                                        <span class="craft-cost" id="craft-helmet-cost"><i class="fa-solid fa-coins"></i> 300 Gold</span>
+                                    </div>
+                                    <button class="craft-action-btn">FORGE</button>
+                                </div>
+                                <!-- Craft Armor -->
+                                <div class="craft-card" id="craft-armor-btn" onclick="craftItem('armor')">
+                                    <div class="craft-icon"><i class="fa-solid fa-shirt"></i></div>
+                                    <div class="craft-info">
+                                        <span class="craft-item-title">Forge Heavy Plate Armor</span>
+                                        <span class="craft-item-benefit">+20% Armor Defense Reduction</span>
+                                        <span class="craft-cost" id="craft-armor-cost"><i class="fa-solid fa-coins"></i> 400 Gold</span>
+                                    </div>
+                                    <button class="craft-action-btn">FORGE</button>
+                                </div>
+                                <!-- Craft Ring -->
+                                <div class="craft-card" id="craft-ring-btn" onclick="craftItem('ring')">
+                                    <div class="craft-icon"><i class="fa-solid fa-ring"></i></div>
+                                    <div class="craft-info">
+                                        <span class="craft-item-title">Forge Sapphire Signet Ring</span>
+                                        <span class="craft-item-benefit">+8% Critical Strike Chance</span>
+                                        <span class="craft-cost" id="craft-ring-cost"><i class="fa-solid fa-coins"></i> 600 Gold</span>
+                                    </div>
+                                    <button class="craft-action-btn">FORGE</button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Artifacts Showcase -->
-                        <div class="artifacts-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-gem"></i> Relics & Artifacts</h2>
-                            <div class="artifacts-grid" id="artifacts-grid">
-                                <!-- Artifacts status shown here -->
+                        <!-- Expeditions / Dungeon Raids -->
+                        <div class="expeditions-panel glass-panel" style="margin-top: 12px;">
+                            <h2 class="section-title"><i class="fa-solid fa-compass"></i> Auto Expeditions</h2>
+                            <div class="expeditions-list" id="expeditions-list">
+                                <!-- Generated by JS -->
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 4: ALTAR (Prestige) -->
+                    <!-- TAB 4: ALTAR OF PRESTIGE -->
                     <div class="tab-content" id="tab-altar">
-                        <!-- Prestige Control Panel -->
                         <div class="altar-panel glass-panel">
                             <h2 class="section-title"><i class="fa-solid fa-dharmachakra"></i> Deep Drilling Altar</h2>
                             
@@ -352,16 +488,12 @@
                             </div>
                         </div>
 
-                        <!-- Prestige Shop Upgrades -->
+                        <!-- Prestige Blessings -->
                         <div class="altar-shop-panel glass-panel">
                             <h2 class="section-title"><i class="fa-solid fa-scroll"></i> Ancient Blessings</h2>
                             <div class="altar-upgrades-list">
-                                
-                                <!-- Altar Card 1: Might -->
                                 <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon might-icon">
-                                        <i class="fa-solid fa-hand-fist"></i>
-                                    </div>
+                                    <div class="altar-upgrade-icon might-icon"><i class="fa-solid fa-hand-fist"></i></div>
                                     <div class="altar-upgrade-info">
                                         <div class="altar-upgrade-header">
                                             <span class="altar-upgrade-name">Ancient Might</span>
@@ -372,12 +504,8 @@
                                     </div>
                                     <button class="altar-buy-btn" id="buy-altar-might">UPGRADE</button>
                                 </div>
-
-                                <!-- Altar Card 2: Overclock -->
                                 <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon overclock-icon">
-                                        <i class="fa-solid fa-gauge-high"></i>
-                                    </div>
+                                    <div class="altar-upgrade-icon overclock-icon"><i class="fa-solid fa-gauge-high"></i></div>
                                     <div class="altar-upgrade-info">
                                         <div class="altar-upgrade-header">
                                             <span class="altar-upgrade-name">Core Overclock</span>
@@ -388,12 +516,8 @@
                                     </div>
                                     <button class="altar-buy-btn" id="buy-altar-overclock">UPGRADE</button>
                                 </div>
-
-                                <!-- Altar Card 3: Critical -->
                                 <div class="altar-upgrade-card">
-                                    <div class="altar-upgrade-icon critical-icon">
-                                        <i class="fa-solid fa-burst"></i>
-                                    </div>
+                                    <div class="altar-upgrade-icon critical-icon"><i class="fa-solid fa-burst"></i></div>
                                     <div class="altar-upgrade-info">
                                         <div class="altar-upgrade-header">
                                             <span class="altar-upgrade-name">Critical Strike</span>
@@ -404,17 +528,53 @@
                                     </div>
                                     <button class="altar-buy-btn" id="buy-altar-critical">UPGRADE</button>
                                 </div>
-
                             </div>
                         </div>
                     </div>
 
-                    <!-- TAB 5: ACHIEVEMENTS -->
-                    <div class="tab-content" id="tab-achievements">
-                        <div class="achievements-panel glass-panel">
-                            <h2 class="section-title"><i class="fa-solid fa-trophy"></i> Guild Achievements</h2>
-                            <div class="achievements-list" id="achievements-list">
-                                <!-- Achievements generated by JS -->
+                    <!-- TAB 5: GUILD & BANK -->
+                    <div class="tab-content" id="tab-guild">
+                        <!-- Guild Stats -->
+                        <div class="stats-panel glass-panel">
+                            <h2 class="section-title"><i class="fa-solid fa-shield-halved"></i> Dwarven Outlaws Guild</h2>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Guild Rank Level</span>
+                                    <span id="guild-level-display" class="stat-card-value">Lvl 1</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Guild Members Online</span>
+                                    <span class="stat-card-value">4 / 30</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Dungeon Buff</span>
+                                    <span id="guild-buff-display" class="stat-card-value">+0% Gold</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-card-title">Bank Deposits</span>
+                                    <span id="guild-bank-display" class="stat-card-value">0G</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Guild Bank panel -->
+                        <div class="guild-bank-panel glass-panel" style="margin-top: 12px;">
+                            <h2 class="section-title"><i class="fa-solid fa-vault"></i> Deposit in Guild Vault</h2>
+                            <p class="prestige-desc" style="font-size: 10px; margin-bottom: 8px;">
+                                Deposit Gold to increase the Guild Bank Rank. Higher Ranks grant permanent passive Gold Multipliers for the entire active party!
+                            </p>
+                            <div class="guild-bank-deposit-row">
+                                <button class="altar-buy-btn" style="width: 100%;" onclick="depositToGuildBank()">
+                                    DEPOSIT 500 GOLD
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Guild Chat simulator -->
+                        <div class="guild-chat-panel glass-panel" style="margin-top: 12px;">
+                            <h2 class="section-title"><i class="fa-solid fa-comments"></i> Guild Chat Feed</h2>
+                            <div class="guild-chat-log" id="guild-chat-log">
+                                <div class="chat-line"><span class="chat-sender">[Guild Master]:</span> Welcome back! Send your healers to ancient raid dungeons.</div>
                             </div>
                         </div>
                     </div>
@@ -423,7 +583,7 @@
                 <!-- System Controls -->
                 <div class="controls-panel glass-panel">
                     <button id="reset-game-btn" class="danger-btn"><i class="fa-solid fa-rotate-left"></i> Reset Progress</button>
-                    <span class="version-tag">v1.2.0 (RPG)</span>
+                    <span class="version-tag">v2.0.0 (3D Action MMORPG)</span>
                 </div>
             </section>
         </main>
@@ -454,6 +614,8 @@
     <!-- Prestige Transition whiteout overlay -->
     <div id="prestige-flash" class="prestige-flash-overlay hidden"></div>
     
+    <!-- Include local WebGL libraries -->
+    <script src="three.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
