@@ -108,7 +108,7 @@ let audioCtx = null;
 let lastTouchTime = 0;
 
 // --- THREE.JS 3D ENGINE VARIABLES ---
-let scene, camera, renderer;
+let scene, camera, renderer, elCanvasContainer;
 let veinMesh, playerGroup, comp1Group, comp2Group, comp3Group;
 let weaponMesh;
 let enemiesContainer = new THREE.Group();
@@ -341,8 +341,8 @@ function playCoinSound() {
 
 // --- 3D ENGINE SCENE CREATION (THREE.JS) ---
 function init3DScene() {
-    const container = document.getElementById('3d-canvas-container');
-    if (!container) return;
+    elCanvasContainer = document.getElementById('3d-canvas-container');
+    if (!elCanvasContainer) return;
 
     // Create scene
     scene = new THREE.Scene();
@@ -350,14 +350,16 @@ function init3DScene() {
     scene.fog = new THREE.FogExp2(0x0e0c12, 0.06);
 
     // Create camera
-    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+    const width = elCanvasContainer.clientWidth || 300;
+    const height = elCanvasContainer.clientHeight || 300;
+    camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
     
     // Create Renderer with optimized performance flags
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Caps pixel ratio for mobile WebView
     renderer.shadowMap.enabled = false; // Disable dynamic shadows to save GPU
-    container.appendChild(renderer.domElement);
+    elCanvasContainer.appendChild(renderer.domElement);
 
     // Simple Flat Ambient and Directional lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -449,10 +451,12 @@ function init3DScene() {
 
     // Window resize handler
     window.addEventListener('resize', () => {
-        if (camera && renderer && container) {
-            camera.aspect = container.clientWidth / container.clientHeight;
+        if (camera && renderer && elCanvasContainer) {
+            const w = elCanvasContainer.clientWidth || 300;
+            const h = elCanvasContainer.clientHeight || 300;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(w, h);
         }
     });
 }
@@ -1217,6 +1221,22 @@ function renderLoop(timestamp) {
     if (elapsed < fpsInterval) return; // Cap at 60 FPS
     
     lastFrameTime = timestamp - (elapsed % fpsInterval);
+
+    // Dynamic resize handler in case layout finished after DOMContentLoaded
+    if (renderer && camera && elCanvasContainer) {
+        const width = elCanvasContainer.clientWidth;
+        const height = elCanvasContainer.clientHeight;
+        
+        if (width > 0 && height > 0) {
+            const canvas = renderer.domElement;
+            if (canvas.width !== Math.floor(width * renderer.getPixelRatio()) || 
+                canvas.height !== Math.floor(height * renderer.getPixelRatio())) {
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+        }
+    }
 
     // Tick active WebGL animations
     if (veinMesh) {
