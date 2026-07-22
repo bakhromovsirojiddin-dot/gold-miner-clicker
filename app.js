@@ -1396,22 +1396,28 @@ function renderLoop(timestamp) {
 function updateCompanionsAI() {
     const time = Date.now() * 0.003;
     const speed = 0.05;
+    
+    // Check if player is moving or far away from central vein
+    const isPlayerExploring = joystickActive || (playerGroup && playerGroup.position.distanceTo(new THREE.Vector3(0, 0, 5)) > 1.5);
 
     // Dwarf (Warrior / Tank) - Aggro drawer
     if (state.classes.dwarf > 0 && comp1Group) {
         let stateText = "IDLE";
-        let targetPos = new THREE.Vector3(0, 0, 0); // central vein
+        let targetPos = new THREE.Vector3(0, 0, 0);
         
-        // FSM states: fight spawned monsters first, else hit vein
         if (combatState.enemies.length > 0) {
             stateText = "COMBAT";
             targetPos.copy(combatState.enemies[0].mesh.position);
+        } else if (isPlayerExploring) {
+            stateText = "FOLLOW";
+            targetPos.copy(getSquadPosition(0, 1.2)); // Stands in front of player
         } else {
             stateText = "MINING";
             targetPos.set(0, -0.2, 1.8); // Position near vein
         }
 
-        moveCompanionTo(comp1Group, targetPos, speed);
+        const currentSpeed = stateText === "FOLLOW" ? speed * 1.5 : speed;
+        moveCompanionTo(comp1Group, targetPos, currentSpeed);
         
         // Taunt logic (Forces monster target to Warrior)
         if (stateText === "COMBAT" && Math.random() < 0.01) {
@@ -1423,10 +1429,14 @@ function updateCompanionsAI() {
 
         // Auto Attack swing animation
         if (comp1Group.position.distanceTo(targetPos) <= 2.2) {
-            comp1Group.children[2].rotation.x = Math.sin(time * 6) * 0.8;
+            if (comp1Group.children && comp1Group.children[2]) {
+                comp1Group.children[2].rotation.x = Math.sin(time * 6) * 0.8;
+            }
             dealPassiveCompanionDmg();
         } else {
-            comp1Group.children[2].rotation.x = Math.PI / 2;
+            if (comp1Group.children && comp1Group.children[2]) {
+                comp1Group.children[2].rotation.x = Math.PI / 2;
+            }
         }
     }
 
@@ -1439,12 +1449,10 @@ function updateCompanionsAI() {
         let healTarget = null;
         let lowestHP = 1000;
         
-        // Check player
         if (combatState.player.hp < combatState.player.maxHp * 0.7 && combatState.player.hp < lowestHP) {
             healTarget = { type: 'player', group: playerGroup, obj: combatState.player };
             lowestHP = combatState.player.hp;
         }
-        // Check warrior
         if (state.classes.dwarf > 0 && combatState.comp1.hp < combatState.comp1.maxHp * 0.7 && combatState.comp1.hp < lowestHP) {
             healTarget = { type: 'comp1', group: comp1Group, obj: combatState.comp1 };
             lowestHP = combatState.comp1.hp;
@@ -1462,30 +1470,56 @@ function updateCompanionsAI() {
                 spawnHealVisual(healTarget.group.position);
                 writeLog(`💚 Жрец применил 'Малое исцеление' на союзника! Восстановлено +50 HP.`, "log-skill");
             }
+        } else if (isPlayerExploring) {
+            stateText = "FOLLOW";
+            targetPos.copy(getSquadPosition(-1.2, -1.2)); // behind left
         }
 
-        moveCompanionTo(comp2Group, targetPos, speed);
+        const currentSpeed = stateText === "FOLLOW" ? speed * 1.5 : speed;
+        moveCompanionTo(comp2Group, targetPos, currentSpeed);
         
         if (stateText === "MINING" && comp2Group.position.distanceTo(targetPos) <= 2.2) {
-            comp2Group.children[2].rotation.x = Math.sin(time * 4) * 0.8;
+            if (comp2Group.children && comp2Group.children[2]) {
+                comp2Group.children[2].rotation.x = Math.sin(time * 4) * 0.8;
+            }
             dealPassiveCompanionDmg();
         }
     }
 
     // Goblin (Rogue / DPS) - Dagger burst
     if (state.classes.goblin > 0 && comp3Group) {
+        let stateText = "MINING";
         let targetPos = new THREE.Vector3(1.8, -0.2, 0);
+        
         if (combatState.enemies.length > 0) {
+            stateText = "COMBAT";
             targetPos.copy(combatState.enemies[0].mesh.position);
+        } else if (isPlayerExploring) {
+            stateText = "FOLLOW";
+            targetPos.copy(getSquadPosition(1.2, -1.2)); // behind right
         }
 
-        moveCompanionTo(comp3Group, targetPos, speed * 1.3); // Rogue runs faster
+        const currentSpeed = stateText === "FOLLOW" ? speed * 1.5 : speed * 1.3;
+        moveCompanionTo(comp3Group, targetPos, currentSpeed);
 
         if (comp3Group.position.distanceTo(targetPos) <= 2.2) {
-            comp3Group.children[2].rotation.x = Math.sin(time * 8) * 0.9;
+            if (comp3Group.children && comp3Group.children[2]) {
+                comp3Group.children[2].rotation.x = Math.sin(time * 8) * 0.9;
+            }
             dealPassiveCompanionDmg();
         }
     }
+}
+
+function getSquadPosition(ox, oz) {
+    const angle = playerGroup ? playerGroup.rotation.y : 0;
+    const s = Math.sin(angle);
+    const c = Math.cos(angle);
+    const rx = ox * c - oz * s;
+    const rz = ox * s + oz * c;
+    const px = playerGroup ? playerGroup.position.x : 0;
+    const pz = playerGroup ? playerGroup.position.z : 5;
+    return new THREE.Vector3(px + rx, -0.2, pz + rz);
 }
 
 function moveCompanionTo(group, targetPos, speed) {
@@ -2456,10 +2490,33 @@ function render2DLoop() {
     ctx2D.beginPath(); ctx2D.arc(pX, pY, 11, 0, Math.PI * 2); ctx2D.fill();
     ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1.5; ctx2D.stroke();
     
+    // Draw player weapon visual swing line
+    ctx2D.strokeStyle = '#e2b13c';
+    ctx2D.lineWidth = 2.5;
+    ctx2D.beginPath();
+    ctx2D.moveTo(pX, pY);
+    const swingAngle = playerGroup.rotation.y + (weaponMesh ? weaponMesh.rotation.z : 0) - Math.PI/2;
+    ctx2D.lineTo(pX + Math.sin(swingAngle) * 16, pY + Math.cos(swingAngle) * 16);
+    ctx2D.stroke();
+
     ctx2D.fillStyle = '#ffffff';
     ctx2D.font = 'bold 8px Courier New';
     ctx2D.textAlign = 'center';
     ctx2D.fillText(`YOU (${state.playerClass.toUpperCase()})`, pX, pY - 14);
+    
+    // Draw player HP/MP bars
+    const playerMaxHp = 100 + (state.equipment.helmet - 1) * 150;
+    const playerHpPct = combatState.player.hp / playerMaxHp;
+    ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx2D.fillRect(pX - 12, pY + 14, 24, 4);
+    ctx2D.fillStyle = '#30d158';
+    ctx2D.fillRect(pX - 12, pY + 14, playerHpPct * 24, 4);
+    
+    const playerMpPct = combatState.player.mp / combatState.player.maxMp;
+    ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx2D.fillRect(pX - 12, pY + 19, 24, 2);
+    ctx2D.fillStyle = '#0a84ff';
+    ctx2D.fillRect(pX - 12, pY + 19, playerMpPct * 24, 2);
     
     // 3. Draw Party AI companions
     if (state.classes.dwarf > 0 && comp1Group) {
@@ -2469,6 +2526,14 @@ function render2DLoop() {
         ctx2D.beginPath(); ctx2D.arc(c1X, c1Y, 9, 0, Math.PI * 2); ctx2D.fill();
         ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
         ctx2D.fillStyle = '#ff9500'; ctx2D.font = '7px Courier New'; ctx2D.fillText('TANK', c1X, c1Y - 12);
+        
+        // HP bar Tank
+        const maxComp1Hp = 250 + (state.classes.dwarf - 1) * 50;
+        const c1HpPct = combatState.comp1.hp / maxComp1Hp;
+        ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2D.fillRect(c1X - 10, c1Y + 11, 20, 3);
+        ctx2D.fillStyle = '#30d158';
+        ctx2D.fillRect(c1X - 10, c1Y + 11, c1HpPct * 20, 3);
     }
     if (state.classes.sage > 0 && comp2Group) {
         const c2X = centerX + comp2Group.position.x * scale;
@@ -2477,6 +2542,19 @@ function render2DLoop() {
         ctx2D.beginPath(); ctx2D.arc(c2X, c2Y, 9, 0, Math.PI * 2); ctx2D.fill();
         ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
         ctx2D.fillStyle = '#00f0ff'; ctx2D.font = '7px Courier New'; ctx2D.fillText('HEALER', c2X, c2Y - 12);
+        
+        // HP/MP bar Healer
+        const c2HpPct = combatState.comp2.hp / combatState.comp2.maxHp;
+        ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2D.fillRect(c2X - 10, c2Y + 11, 20, 3);
+        ctx2D.fillStyle = '#30d158';
+        ctx2D.fillRect(c2X - 10, c2Y + 11, c2HpPct * 20, 3);
+        
+        const c2MpPct = combatState.comp2.mp / combatState.comp2.maxMp;
+        ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2D.fillRect(c2X - 10, c2Y + 15, 20, 1.5);
+        ctx2D.fillStyle = '#0a84ff';
+        ctx2D.fillRect(c2X - 10, c2Y + 15, c2MpPct * 20, 1.5);
     }
     if (state.classes.goblin > 0 && comp3Group) {
         const c3X = centerX + comp3Group.position.x * scale;
@@ -2485,6 +2563,13 @@ function render2DLoop() {
         ctx2D.beginPath(); ctx2D.arc(c3X, c3Y, 9, 0, Math.PI * 2); ctx2D.fill();
         ctx2D.strokeStyle = '#ffffff'; ctx2D.lineWidth = 1; ctx2D.stroke();
         ctx2D.fillStyle = '#32cd32'; ctx2D.font = '7px Courier New'; ctx2D.fillText('ROGUE', c3X, c3Y - 12);
+        
+        // HP bar Rogue
+        const c3HpPct = combatState.comp3.hp / combatState.comp3.maxHp;
+        ctx2D.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2D.fillRect(c3X - 10, c3Y + 11, 20, 3);
+        ctx2D.fillStyle = '#30d158';
+        ctx2D.fillRect(c3X - 10, c3Y + 11, c3HpPct * 20, 3);
     }
     
     // 4. Draw Spawned Dungeon Monsters
